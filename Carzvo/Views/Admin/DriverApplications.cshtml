@@ -1,0 +1,169 @@
+﻿@model List<DriverApplication>
+@{
+    ViewData["Title"] = "Заявки на водителей";
+}
+
+<div class="container mt-4">
+    <h1 class="mb-4"><i class="fas fa-file-signature"></i> @ViewData["Title"]</h1>
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> На данный момент нет заявок на рассмотрение.
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Заявки на рассмотрение: @Model.Count(d => d.Status == ApplicationStatus.Pending)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Пользователь</th>
+                                <th>Опыт (лет)</th>
+                                <th>Типы транспорта</th>
+                                <th>Дата подачи</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var application in Model)
+                            {
+                                <tr>
+                                    <td>@application.Id</td>
+                                    <td>
+                                        @if (application.User != null)
+                                        {
+                                            <div>
+                                                <strong>@application.User.FullName</strong><br>
+                                                <small class="text-muted">@application.User.Email</small>
+                                            </div>
+                                        }
+                                    </td>
+                                    <td>@application.ExperienceYears</td>
+                                    <td>
+                                        <small>@application.VehicleTypes</small>
+                                    </td>
+                                    <td>@application.ApplicationDate.ToString("dd.MM.yyyy HH:mm")</td>
+                                    <td>
+                                        <span class="badge bg-@GetStatusBadgeColor(application.Status)">
+                                            @application.Status
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a asp-action="DriverApplicationDetails" asp-route-id="@application.Id"
+                                               class="btn btn-outline-info" title="Детали">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+
+                                            @if (application.Status == ApplicationStatus.Pending)
+                                            {
+                                                <button type="button" class="btn btn-outline-success"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#approveModal-@application.Id"
+                                                        title="Одобрить">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+
+                                                <button type="button" class="btn btn-outline-danger"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#rejectModal-@application.Id"
+                                                        title="Отклонить">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            }
+                                        </div>
+
+                                        <!-- Модальное окно для одобрения -->
+                                        <div class="modal fade" id="approveModal-@application.Id" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Одобрить заявку</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form asp-action="ApproveDriverApplication" method="post">
+                                                        <input type="hidden" name="id" value="@application.Id" />
+                                                        <div class="modal-body">
+                                                            <p>Вы уверены, что хотите одобрить заявку от
+                                                               <strong>@application.User?.FullName</strong>?</p>
+                                                            <div class="mb-3">
+                                                                <label for="managerComment-@application.Id" class="form-label">
+                                                                    Комментарий (необязательно):
+                                                                </label>
+                                                                <textarea class="form-control"
+                                                                          id="managerComment-@application.Id"
+                                                                          name="managerComment"
+                                                                          rows="3"></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                                            <button type="submit" class="btn btn-success">Одобрить</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Модальное окно для отклонения -->
+                                        <div class="modal fade" id="rejectModal-@application.Id" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Отклонить заявку</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <form asp-action="RejectDriverApplication" method="post">
+                                                        <input type="hidden" name="id" value="@application.Id" />
+                                                        <div class="modal-body">
+                                                            <p>Вы уверены, что хотите отклонить заявку от
+                                                               <strong>@application.User?.FullName</strong>?</p>
+                                                            <div class="mb-3">
+                                                                <label for="rejectComment-@application.Id" class="form-label">
+                                                                    Причина отклонения:
+                                                                </label>
+                                                                <textarea class="form-control"
+                                                                          id="rejectComment-@application.Id"
+                                                                          name="managerComment"
+                                                                          rows="3" required></textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                                            <button type="submit" class="btn btn-danger">Отклонить</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@functions {
+    string GetStatusBadgeColor(ApplicationStatus status)
+    {
+        return status switch
+        {
+            ApplicationStatus.Pending => "warning",
+            ApplicationStatus.Approved => "success",
+            ApplicationStatus.Rejected => "danger",
+            _ => "secondary"
+        };
+    }
+}

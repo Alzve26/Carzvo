@@ -1,0 +1,379 @@
+﻿@model Carzvo.Models.DashboardViewModel
+@{
+    ViewData["Title"] = "Личный кабинет";
+    var userName = ViewData["UserName"] as string ?? "Пользователь";
+    var userRole = ViewData["UserRole"] as string ?? "Пользователь";
+}
+
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="h3 mb-2"><i class="fas fa-user-circle me-2"></i>Добро пожаловать, @userName!</h1>
+                            <p class="text-muted mb-0">
+                                <span class="badge bg-primary">@userRole</span>
+                                <span class="ms-2">@DateTime.Now.ToString("dddd, dd MMMM yyyy")</span>
+                            </p>
+                        </div>
+                        <div>
+                            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-home"></i> На главную
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.IsAdminOrManager)
+    {
+        <!-- Панель для администраторов/менеджеров -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card text-white bg-primary">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-users"></i> Пользователи</h5>
+                        <h2 class="card-text">@Model.TotalUsers</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 mb-3">
+                <div class="card text-white bg-success">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-truck"></i> Водители</h5>
+                        <h2 class="card-text">@Model.TotalDrivers</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 mb-3">
+                <div class="card text-white bg-info">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-box"></i> Все доставки</h5>
+                        <h2 class="card-text">@Model.TotalShipments</h2>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3 mb-3">
+                <div class="card text-white bg-warning">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-clock"></i> Ожидают</h5>
+                        <h2 class="card-text">@Model.PendingShipments</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Последние доставки -->
+        @if (Model.RecentShipments != null && Model.RecentShipments.Any())
+        {
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-history me-2"></i>Последние доставки</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>№ Заказа</th>
+                                            <th>Клиент</th>
+                                            <th>Адрес доставки</th>
+                                            <th>Статус</th>
+                                            <th>Дата создания</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var shipment in Model.RecentShipments)
+                                        {
+                                            <tr>
+                                                <td>@shipment.OrderNumber</td>
+                                                <td>@shipment.User?.FullName</td>
+                                                <td>
+                                                    <small>@shipment.DeliveryAddress</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-@GetStatusBadgeColor(shipment.Status)">
+                                                        @shipment.Status
+                                                    </span>
+                                                </td>
+                                                <td>@shipment.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                                                <td>
+                                                    <a asp-controller="Shipments" asp-action="Details" asp-route-id="@shipment.Id"
+                                                       class="btn btn-sm btn-outline-info">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    else if (Model.IsDriver)
+    {
+        <!-- Панель для водителей -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-truck me-2"></i>Мои рейсы</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.MyShipments != null && Model.MyShipments.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>№ Заказа</th>
+                                            <th>Описание</th>
+                                            <th>Адрес загрузки</th>
+                                            <th>Статус</th>
+                                            <th>Дата доставки</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var shipment in Model.MyShipments)
+                                        {
+                                            <tr>
+                                                <td>@shipment.OrderNumber</td>
+                                                <td>
+                                                    <small>@shipment.Description</small>
+                                                </td>
+                                                <td>
+                                                    <small>@shipment.PickupAddress</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-@GetStatusBadgeColor(shipment.Status)">
+                                                        @shipment.Status
+                                                    </span>
+                                                </td>
+                                                <td>@shipment.DeliveryDate.ToString("dd.MM.yyyy")</td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <a asp-controller="Shipments" asp-action="Details" asp-route-id="@shipment.Id"
+                                                           class="btn btn-outline-info">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        @if (shipment.Status == ShipmentStatus.Assigned || shipment.Status == ShipmentStatus.InTransit)
+                                                        {
+                                                            <button type="button" class="btn btn-outline-primary update-status-btn"
+                                                                    data-id="@shipment.Id" data-status="InTransit">
+                                                                <i class="fas fa-play"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-outline-success update-status-btn"
+                                                                    data-id="@shipment.Id" data-status="Delivered">
+                                                                <i class="fas fa-check"></i>
+                                                            </button>
+                                                        }
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>У вас пока нет назначенных рейсов.
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Панель для обычных пользователей -->
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Мои заказы</h5>
+                            <a asp-controller="Shipments" asp-action="Create" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-1"></i>Новый заказ
+                            </a>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.MyShipments != null && Model.MyShipments.Any())
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>№ Заказа</th>
+                                            <th>Описание</th>
+                                            <th>Статус</th>
+                                            <th>Цена</th>
+                                            <th>Дата доставки</th>
+                                            <th>Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var shipment in Model.MyShipments)
+                                        {
+                                            <tr>
+                                                <td>@shipment.OrderNumber</td>
+                                                <td>
+                                                    <small>@shipment.Description</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-@GetStatusBadgeColor(shipment.Status)">
+                                                        @shipment.Status
+                                                    </span>
+                                                </td>
+                                                <td>@shipment.Price.ToString("C")</td>
+                                                <td>@shipment.DeliveryDate.ToString("dd.MM.yyyy")</td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <a asp-controller="Shipments" asp-action="Details" asp-route-id="@shipment.Id"
+                                                           class="btn btn-outline-info">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        @if (shipment.Status == ShipmentStatus.Pending)
+                                                        {
+                                                            <a asp-controller="Shipments" asp-action="Edit" asp-route-id="@shipment.Id"
+                                                               class="btn btn-outline-warning">
+                                                                <i class="fas fa-edit"></i>
+                                                            </a>
+                                                        }
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="text-center py-5">
+                                <div class="display-4 text-muted mb-3">
+                                    <i class="fas fa-box-open"></i>
+                                </div>
+                                <h4>У вас пока нет заказов</h4>
+                                <p class="text-muted">Создайте свой первый заказ прямо сейчас!</p>
+                                <a asp-controller="Shipments" asp-action="Create" class="btn btn-primary mt-3">
+                                    <i class="fas fa-plus me-2"></i>Создать первый заказ
+                                </a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <!-- Краткая информация -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Статистика</h6>
+                    </div>
+                    <div class="card-body">
+                        @if (Model.MyShipments != null)
+                        {
+                            var totalOrders = Model.MyShipments.Count;
+                            var activeOrders = Model.MyShipments.Count(s => s.Status == ShipmentStatus.InTransit || s.Status == ShipmentStatus.Assigned);
+                            var deliveredOrders = Model.MyShipments.Count(s => s.Status == ShipmentStatus.Delivered);
+
+                            <div class="mb-3">
+                                <small class="text-muted">Всего заказов:</small>
+                                <h5 class="mb-0">@totalOrders</h5>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Активные:</small>
+                                <h5 class="mb-0 text-warning">@activeOrders</h5>
+                            </div>
+                            <div class="mb-3">
+                                <small class="text-muted">Доставлено:</small>
+                                <h5 class="mb-0 text-success">@deliveredOrders</h5>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Быстрые действия -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>Быстрые действия</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a asp-controller="Shipments" asp-action="Create" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Новая доставка
+                            </a>
+                            <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-user-edit me-2"></i>Профиль
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('.update-status-btn').click(function() {
+                var shipmentId = $(this).data('id');
+                var newStatus = $(this).data('status');
+
+                if (confirm('Вы уверены, что хотите изменить статус?')) {
+                    $.ajax({
+                        url: '/Shipments/UpdateStatus/' + shipmentId,
+                        type: 'POST',
+                        data: { status: newStatus },
+                        success: function(response) {
+                            if (response.success) {
+                                location.reload();
+                            } else {
+                                alert('Ошибка: ' + response.message);
+                            }
+                        },
+                        error: function() {
+                            alert('Произошла ошибка при обновлении статуса');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+}
+
+@functions {
+    string GetStatusBadgeColor(ShipmentStatus status)
+    {
+        return status switch
+        {
+            ShipmentStatus.Pending => "warning",
+            ShipmentStatus.Processing => "info",
+            ShipmentStatus.Assigned => "primary",
+            ShipmentStatus.InTransit => "success",
+            ShipmentStatus.Delivered => "success",
+            ShipmentStatus.Cancelled => "danger",
+            _ => "secondary"
+        };
+    }
+}

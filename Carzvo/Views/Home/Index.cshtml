@@ -1,0 +1,118 @@
+﻿@{
+    ViewData["Title"] = "Carzvo - Грузоперевозки";
+}
+
+<div class="container mt-5">
+    <div class="jumbotron bg-light p-5 rounded-3">
+        <h1 class="display-4 text-center mb-4">🚛 Carzvo</h1>
+        <p class="lead text-center mb-4">Надежные грузоперевозки по всей стране. Быстро, безопасно, доступно!</p>
+
+        @if (!User.Identity.IsAuthenticated)
+        {
+            <div class="text-center mt-5">
+                <a asp-area="Identity" asp-page="/Account/Register" class="btn btn-primary btn-lg me-3 px-4 py-2">
+                    <i class="fas fa-user-plus me-2"></i>Начать работу
+                </a>
+                <a asp-area="Identity" asp-page="/Account/Login" class="btn btn-outline-primary btn-lg px-4 py-2">
+                    <i class="fas fa-sign-in-alt me-2"></i>Войти в систему
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="text-center mt-5">
+                <a asp-controller="Home" asp-action="Dashboard" class="btn btn-primary btn-lg me-3 px-4 py-2">
+                    <i class="fas fa-tachometer-alt me-2"></i>Личный кабинет
+                </a>
+                @if (User.IsInRole("User"))
+                {
+                    <a asp-controller="Shipments" asp-action="Create" class="btn btn-success btn-lg px-4 py-2">
+                        <i class="fas fa-plus me-2"></i>Новая доставка
+                    </a>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Статистика -->
+    <div class="row mt-5">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 text-primary mb-3">
+                        <i class="fas fa-truck-loading"></i>
+                    </div>
+                    <h3 class="card-title">@ViewData["TotalShipments"]</h3>
+                    <p class="card-text text-muted">Выполненных доставок</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 text-warning mb-3">
+                        <i class="fas fa-road"></i>
+                    </div>
+                    <h3 class="card-title">@ViewData["ActiveShipments"]</h3>
+                    <p class="card-text text-muted">Доставок в пути</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 text-success mb-3">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <h3 class="card-title">@ViewData["TotalDrivers"]</h3>
+                    <p class="card-text text-muted">Профессиональных водителей</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Преимущества -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h2 class="text-center mb-4">Почему выбирают нас?</h2>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 text-primary mb-3">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h4>Безопасность</h4>
+                    <p class="card-text">Все водители проходят проверку и имеют необходимые лицензии</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 text-success mb-3">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h4>Своевременность</h4>
+                    <p class="card-text">97% доставок выполняются точно в срок</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 text-info mb-3">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h4>Поддержка 24/7</h4>
+                    <p class="card-text">Круглосуточная поддержка клиентов и отслеживание грузов</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

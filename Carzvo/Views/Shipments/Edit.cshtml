@@ -1,0 +1,137 @@
+﻿@model Shipment
+@{
+    ViewData["Title"] = "Редактирование заказа";
+    var drivers = ViewBag.Drivers as List<ApplicationUser> ?? new List<ApplicationUser>();
+    var isManagerOrAdmin = User.IsInRole("Manager") || User.IsInRole("Admin");
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-edit me-2"></i>@ViewData["Title"]</h4>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="OrderNumber" />
+                        <input type="hidden" asp-for="UserId" />
+                        <input type="hidden" asp-for="CreatedAt" />
+
+                        <div class="row">
+                            <!-- Для обычных пользователей -->
+                            @if (!isManagerOrAdmin)
+                            {
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label asp-for="Description" class="form-label"></label>
+                                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                                        <span asp-validation-for="Description" class="text-danger"></span>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="PickupDate" class="form-label"></label>
+                                            <input asp-for="PickupDate" class="form-control" type="datetime-local">
+                                            <span asp-validation-for="PickupDate" class="text-danger"></span>
+                                        </div>
+
+                                        <div class="col-md-6 mb-3">
+                                            <label asp-for="DeliveryDate" class="form-label"></label>
+                                            <input asp-for="DeliveryDate" class="form-control" type="datetime-local">
+                                            <span asp-validation-for="DeliveryDate" class="text-danger"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label asp-for="Notes" class="form-label"></label>
+                                        <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
+                                        <span asp-validation-for="Notes" class="text-danger"></span>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <!-- Для менеджеров и админов -->
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label asp-for="Status" class="form-label"></label>
+                                        <select asp-for="Status" class="form-select">
+                                            @foreach (var status in Enum.GetValues(typeof(ShipmentStatus)).Cast<ShipmentStatus>())
+                                            {
+                                                <option value="@status">@status</option>
+                                            }
+                                        </select>
+                                        <span asp-validation-for="Status" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label asp-for="DriverId" class="form-label"></label>
+                                        <select asp-for="DriverId" class="form-select">
+                                            <option value="">Выберите водителя</option>
+                                            @foreach (var driver in drivers)
+                                            {
+                                                <option value="@driver.Id">@driver.FullName (@driver.PhoneNumber)</option>
+                                            }
+                                        </select>
+                                        <span asp-validation-for="DriverId" class="text-danger"></span>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label asp-for="Price" class="form-label"></label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">₽</span>
+                                            <input asp-for="Price" class="form-control" type="number" step="0.01">
+                                        </div>
+                                        <span asp-validation-for="Price" class="text-danger"></span>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="card bg-light">
+                                        <div class="card-body">
+                                            <h6><i class="fas fa-info-circle me-2"></i>Информация о заказе</h6>
+                                            <hr>
+                                            <p><strong>№ Заказа:</strong> @Model.OrderNumber</p>
+                                            <p><strong>Клиент:</strong> @Model.User?.FullName</p>
+                                            <p><strong>Телефон:</strong> @Model.User?.PhoneNumber</p>
+                                            <p><strong>Адрес загрузки:</strong> @Model.PickupAddress</p>
+                                            <p><strong>Адрес доставки:</strong> @Model.DeliveryAddress</p>
+                                            <p><strong>Вес:</strong> @Model.Weight кг</p>
+                                            <p><strong>Тип транспорта:</strong> @Model.VehicleType</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Внимание:</strong> @(isManagerOrAdmin ?
+                                "Вы можете изменить статус, назначить водителя и цену заказа." :
+                                "Вы можете редактировать только описание, даты и комментарии к заказу.")
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-action="@(isManagerOrAdmin ? "All" : "Index")" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Назад
+                            </a>
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Сохранить
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

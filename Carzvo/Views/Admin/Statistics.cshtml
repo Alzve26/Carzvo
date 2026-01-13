@@ -1,0 +1,174 @@
+﻿@model StatisticsViewModel
+@{
+    ViewData["Title"] = "Статистика системы";
+}
+
+<div class="container mt-4">
+    <h1 class="mb-4"><i class="fas fa-chart-bar"></i> @ViewData["Title"]</h1>
+
+    <div class="row">
+        <!-- Пользователи по ролям -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-users"></i> Пользователи по ролям</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.UsersByRole != null && Model.UsersByRole.Any())
+                    {
+                        <table class="table">
+                            <tbody>
+                                @foreach (var kvp in Model.UsersByRole)
+                                {
+                                    <tr>
+                                        <td>@kvp.Key</td>
+                                        <td class="text-end">
+                                            <span class="badge bg-primary">@kvp.Value</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Нет данных</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Доставки по статусам -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-box"></i> Доставки по статусам</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.ShipmentsByStatus != null && Model.ShipmentsByStatus.Any())
+                    {
+                        <table class="table">
+                            <tbody>
+                                @foreach (var kvp in Model.ShipmentsByStatus)
+                                {
+                                    <tr>
+                                        <td>@kvp.Key</td>
+                                        <td class="text-end">
+                                            <span class="badge bg-@GetStatusBadgeColor(kvp.Key)">@kvp.Value</span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Нет данных</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Доставки по типам транспорта -->
+    <div class="row">
+        <div class="col-md-12 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-truck"></i> Доставки по типам транспорта</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.ShipmentsByVehicleType != null && Model.ShipmentsByVehicleType.Any())
+                    {
+                        <div class="row">
+                            @foreach (var kvp in Model.ShipmentsByVehicleType)
+                            {
+                                <div class="col-md-4 mb-3">
+                                    <div class="card">
+                                        <div class="card-body text-center">
+                                            <h6>@kvp.Key</h6>
+                                            <h3 class="text-primary">@kvp.Value</h3>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Нет данных</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика по месяцам -->
+    @if (Model.ShipmentsByMonth != null && Model.ShipmentsByMonth.Any())
+    {
+        <div class="row">
+            <div class="col-md-12 mb-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-calendar-alt"></i> Динамика доставок (последние 6 месяцев)</h5>
+                    </div>
+                    <div class="card-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Месяц</th>
+                                    <th>Количество доставок</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var kvp in Model.ShipmentsByMonth)
+                                {
+                                    <tr>
+                                        <td>@kvp.Key</td>
+                                        <td>
+                                            <div class="progress">
+                                                <div class="progress-bar"
+                                                     role="progressbar"
+                                                     style="width: @(GetProgressWidth(kvp.Value, Model.ShipmentsByMonth.Values.Max()))%">
+                                                    @kvp.Value
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="mt-4">
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Назад в панель управления
+        </a>
+    </div>
+</div>
+
+@functions {
+    string GetStatusBadgeColor(string status)
+    {
+        return status switch
+        {
+            "Pending" => "warning",
+            "Processing" => "info",
+            "Assigned" => "primary",
+            "InTransit" => "success",
+            "Delivered" => "success",
+            "Cancelled" => "danger",
+            _ => "secondary"
+        };
+    }
+
+    int GetProgressWidth(int value, int max)
+    {
+        if (max == 0) return 0;
+        return (int)((value * 100.0) / max);
+    }
+}
