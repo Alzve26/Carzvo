@@ -1,0 +1,264 @@
+﻿@model Carzvo.Models.Shipment
+@using Carzvo.Models
+
+@{
+    ViewData["Title"] = "Детали заказа";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-box me-2"></i>@ViewData["Title"]</h1>
+                <div>
+                    <a asp-action="Index" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Назад к списку
+                    </a>
+                </div>
+            </div>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Информация о заказе</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Номер заказа:</label>
+                                <h5 class="text-primary">@Model.OrderNumber</h5>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Описание:</label>
+                                <p class="fs-5">@Model.Description</p>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Тип груза:</label>
+                                <p class="fs-5">@Model.CargoType</p>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Вес:</label>
+                                <p class="fs-5">@Model.Weight.ToString("0.##") кг</p>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Объем:</label>
+                                <p class="fs-5">@Model.Volume.ToString("0.##") м³</p>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Тип транспорта:</label>
+                                <p class="fs-5">@Model.VehicleType</p>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Статус:</label>
+                                <p>
+                                    <span class="badge @GetStatusBadgeClass(Model.Status) fs-6">
+                                        @GetStatusDisplayName(Model.Status)
+                                    </span>
+                                </p>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Цена:</label>
+                                <h4 class="text-success">@Model.Price.ToString("N2") ₽</h4>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Дата создания:</label>
+                                <p class="fs-5">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                            </div>
+
+                            @if (Model.UpdatedAt.HasValue)
+                            {
+                                <div class="mb-3">
+                                    <label class="form-label text-muted">Дата обновления:</label>
+                                    <p class="fs-5">@Model.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <hr />
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Адрес загрузки:</label>
+                                <p class="fs-5">@Model.PickupAddress</p>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Дата загрузки:</label>
+                                <p class="fs-5">@Model.PickupDate.ToString("dd.MM.yyyy")</p>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Адрес доставки:</label>
+                                <p class="fs-5">@Model.DeliveryAddress</p>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Дата доставки:</label>
+                                <p class="fs-5">@Model.DeliveryDate.ToString("dd.MM.yyyy")</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Примечания:</label>
+                            <div class="border rounded p-3 bg-light">
+                                <p class="mb-0">@Model.Notes</p>
+                            </div>
+                        </div>
+                    }
+
+                    @if (Model.CompletedAt.HasValue)
+                    {
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            Заказ доставлен: @Model.CompletedAt.Value.ToString("dd.MM.yyyy HH:mm")
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <!-- Информация о водителе -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-truck me-2"></i>Информация о водителе</h6>
+                </div>
+                <div class="card-body">
+                    @if (Model.Driver != null)
+                    {
+                        <div class="text-center mb-3">
+                            <div class="display-4 text-primary mb-2">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <h5>@Model.Driver.FullName</h5>
+                            <p class="text-muted">@Model.Driver.PhoneNumber</p>
+                            <span class="badge bg-primary">Водитель</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-3">
+                            <div class="display-4 text-muted mb-2">
+                                <i class="fas fa-user-slash"></i>
+                            </div>
+                            <p class="text-muted">Водитель не назначен</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Действия -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-cogs me-2"></i>Действия</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning d-flex align-items-center justify-content-center">
+                            <i class="fas fa-edit me-2"></i>Редактировать заказ
+                        </a>
+
+                        @if (Model.Status == ShipmentStatus.Pending)
+                        {
+                            <form asp-action="Delete" method="post" onsubmit="return confirm('Удалить заказ @Model.OrderNumber?');">
+                                <input type="hidden" name="id" value="@Model.Id" />
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-danger w-100 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-trash me-2"></i>Удалить заказ
+                                </button>
+                            </form>
+                        }
+
+                        <a asp-action="Index" class="btn btn-outline-secondary d-flex align-items-center justify-content-center">
+                            <i class="fas fa-list me-2"></i>К списку заказов
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Автоматическое скрытие alert через 5 секунд
+            setTimeout(function() {
+                $('.alert').fadeOut('slow');
+            }, 5000);
+        });
+    </script>
+}
+
+@functions {
+    string GetStatusBadgeClass(ShipmentStatus status)
+    {
+        switch (status)
+        {
+            case ShipmentStatus.Pending:
+            return "bg-warning text-dark";
+            case ShipmentStatus.Processing:
+            return "bg-info text-white";
+            case ShipmentStatus.Assigned:
+            return "bg-primary text-white";
+            case ShipmentStatus.InTransit:
+            return "bg-success text-white";
+            case ShipmentStatus.Delivered:
+            return "bg-success text-white";
+            case ShipmentStatus.Cancelled:
+            return "bg-danger text-white";
+            default:
+            return "bg-secondary text-white";
+        }
+    }
+
+    string GetStatusDisplayName(ShipmentStatus status)
+    {
+        switch (status)
+        {
+            case ShipmentStatus.Pending:
+            return "Ожидает";
+            case ShipmentStatus.Processing:
+            return "Обрабатывается";
+            case ShipmentStatus.Assigned:
+            return "Назначен";
+            case ShipmentStatus.InTransit:
+            return "В пути";
+            case ShipmentStatus.Delivered:
+            return "Доставлен";
+            case ShipmentStatus.Cancelled:
+            return "Отменен";
+            default:
+            return status.ToString();
+        }
+    }
+}

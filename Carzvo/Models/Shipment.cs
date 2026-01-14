@@ -149,7 +149,6 @@ namespace Carzvo.Models
         public DateTime? CompletedAt { get; set; }
 
         // Внешние ключи
-        [Required]
         public string? UserId { get; set; }
 
         [ForeignKey("UserId")]

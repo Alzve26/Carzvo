@@ -24,10 +24,16 @@ namespace Carzvo.Controllers
 
             try
             {
-                // Статистика для главной страницы
+
                 ViewData["TotalShipments"] = await _context.Shipments.CountAsync();
                 ViewData["ActiveShipments"] = await _context.Shipments
                     .Where(s => s.Status == ShipmentStatus.InTransit)
+                    .CountAsync();
+                ViewData["DeliveredShipments"] = await _context.Shipments
+                    .Where(s => s.Status == ShipmentStatus.Delivered)
+                    .CountAsync();
+                ViewData["PendingShipments"] = await _context.Shipments
+                    .Where(s => s.Status == ShipmentStatus.Pending)
                     .CountAsync();
                 ViewData["TotalDrivers"] = await _context.Users
                     .Where(u => u.IsDriver)
@@ -36,8 +42,11 @@ namespace Carzvo.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Ошибка при получении статистики для главной страницы");
+                // Значения по умолчанию
                 ViewData["TotalShipments"] = 0;
                 ViewData["ActiveShipments"] = 0;
+                ViewData["DeliveredShipments"] = 0;
+                ViewData["PendingShipments"] = 0;
                 ViewData["TotalDrivers"] = 0;
             }
 

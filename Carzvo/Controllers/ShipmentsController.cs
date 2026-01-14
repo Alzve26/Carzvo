@@ -20,7 +20,7 @@ namespace Carzvo.Controllers
         }
 
         // GET: /Shipments - для обычных пользователей
-        [Authorize(Roles = "User")]
+        [Authorize]
         public async Task<IActionResult> Index()
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -47,7 +47,7 @@ namespace Carzvo.Controllers
         }
 
         // GET: /Shipments/Create
-        [Authorize(Roles = "User")]
+        [Authorize]
         public IActionResult Create()
         {
             return View();
@@ -56,7 +56,7 @@ namespace Carzvo.Controllers
         // POST: /Shipments/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "User")]
+        [Authorize]
         public async Task<IActionResult> Create(Shipment shipment)
         {
             if (ModelState.IsValid)
@@ -74,6 +74,7 @@ namespace Carzvo.Controllers
                 TempData["SuccessMessage"] = "Заказ успешно создан! Номер вашего заказа: " + shipment.OrderNumber;
                 return RedirectToAction(nameof(Index));
             }
+
             return View(shipment);
         }
 
@@ -213,7 +214,7 @@ namespace Carzvo.Controllers
         }
 
         // GET: /Shipments/Delete/5
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -231,26 +232,55 @@ namespace Carzvo.Controllers
                 return NotFound();
             }
 
+            // Проверка прав: пользователь может удалять только свои заказы
+            // Админы и менеджеры могут удалять любые заказы
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!User.IsInRole("Admin") && !User.IsInRole("Manager") && shipment.UserId != userId)
+            {
+                return Forbid();
+            }
+
             return View(shipment);
         }
 
         // POST: /Shipments/Delete/5
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var shipment = await _context.Shipments.FindAsync(id);
-            if (shipment != null)
+            if (shipment == null)
             {
-                _context.Shipments.Remove(shipment);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation($"Доставка удалена: {shipment.OrderNumber}");
-                TempData["SuccessMessage"] = "Заказ успешно удален!";
+                return NotFound();
             }
 
-            return RedirectToAction(nameof(All));
+            // Проверка прав: пользователь может удалять только свои заказы
+            // Админы и менеджеры могут удалять любые заказы
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!User.IsInRole("Admin") && !User.IsInRole("Manager") && shipment.UserId != userId)
+            {
+                return Forbid();
+            }
+
+            // Логирование информации об удалении
+            var orderNumber = shipment.OrderNumber;
+
+            _context.Shipments.Remove(shipment);
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Доставка удалена: {orderNumber}");
+            TempData["SuccessMessage"] = $"Заказ {orderNumber} успешно удален!";
+
+            // Перенаправление в зависимости от роли
+            if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+            {
+                return RedirectToAction(nameof(All));
+            }
+            else
+            {
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         // GET: /Shipments/DriverShipments - для водителей

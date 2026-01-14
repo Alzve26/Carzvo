@@ -1,4 +1,6 @@
-﻿@model Shipment
+﻿@model Carzvo.Models.Shipment
+@using Carzvo.Models
+
 @{
     ViewData["Title"] = "Редактирование заказа";
     var drivers = ViewBag.Drivers as List<ApplicationUser> ?? new List<ApplicationUser>();
@@ -13,11 +15,29 @@
                     <h4><i class="fas fa-edit me-2"></i>@ViewData["Title"]</h4>
                 </div>
                 <div class="card-body">
-                    <form asp-action="Edit" method="post">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <form asp-action="Edit" method="post" id="editForm">
                         <input type="hidden" asp-for="Id" />
                         <input type="hidden" asp-for="OrderNumber" />
                         <input type="hidden" asp-for="UserId" />
                         <input type="hidden" asp-for="CreatedAt" />
+
+                        @Html.AntiForgeryToken()
 
                         <div class="row">
                             <!-- Для обычных пользователей -->
@@ -25,8 +45,8 @@
                             {
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label asp-for="Description" class="form-label"></label>
-                                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                                        <label asp-for="Description" class="form-label">Описание груза</label>
+                                        <textarea asp-for="Description" class="form-control" rows="3" required></textarea>
                                         <span asp-validation-for="Description" class="text-danger"></span>
                                     </div>
                                 </div>
@@ -34,20 +54,20 @@
                                 <div class="col-md-6">
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
-                                            <label asp-for="PickupDate" class="form-label"></label>
-                                            <input asp-for="PickupDate" class="form-control" type="datetime-local">
+                                            <label asp-for="PickupDate" class="form-label">Дата загрузки</label>
+                                            <input asp-for="PickupDate" class="form-control" type="datetime-local" required>
                                             <span asp-validation-for="PickupDate" class="text-danger"></span>
                                         </div>
 
                                         <div class="col-md-6 mb-3">
-                                            <label asp-for="DeliveryDate" class="form-label"></label>
-                                            <input asp-for="DeliveryDate" class="form-control" type="datetime-local">
+                                            <label asp-for="DeliveryDate" class="form-label">Дата доставки</label>
+                                            <input asp-for="DeliveryDate" class="form-control" type="datetime-local" required>
                                             <span asp-validation-for="DeliveryDate" class="text-danger"></span>
                                         </div>
                                     </div>
 
                                     <div class="mb-3">
-                                        <label asp-for="Notes" class="form-label"></label>
+                                        <label asp-for="Notes" class="form-label">Примечания</label>
                                         <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
                                         <span asp-validation-for="Notes" class="text-danger"></span>
                                     </div>
@@ -58,18 +78,18 @@
                                 <!-- Для менеджеров и админов -->
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label asp-for="Status" class="form-label"></label>
-                                        <select asp-for="Status" class="form-select">
+                                        <label asp-for="Status" class="form-label">Статус</label>
+                                        <select asp-for="Status" class="form-select" required>
                                             @foreach (var status in Enum.GetValues(typeof(ShipmentStatus)).Cast<ShipmentStatus>())
                                             {
-                                                <option value="@status">@status</option>
+                                                <option value="@status">@GetStatusDisplayName(status)</option>
                                             }
                                         </select>
                                         <span asp-validation-for="Status" class="text-danger"></span>
                                     </div>
 
                                     <div class="mb-3">
-                                        <label asp-for="DriverId" class="form-label"></label>
+                                        <label asp-for="DriverId" class="form-label">Водитель</label>
                                         <select asp-for="DriverId" class="form-select">
                                             <option value="">Выберите водителя</option>
                                             @foreach (var driver in drivers)
@@ -81,10 +101,10 @@
                                     </div>
 
                                     <div class="mb-3">
-                                        <label asp-for="Price" class="form-label"></label>
+                                        <label asp-for="Price" class="form-label">Цена</label>
                                         <div class="input-group">
                                             <span class="input-group-text">₽</span>
-                                            <input asp-for="Price" class="form-control" type="number" step="0.01">
+                                            <input asp-for="Price" class="form-control" type="number" step="0.01" min="0">
                                         </div>
                                         <span asp-validation-for="Price" class="text-danger"></span>
                                     </div>
@@ -100,8 +120,18 @@
                                             <p><strong>Телефон:</strong> @Model.User?.PhoneNumber</p>
                                             <p><strong>Адрес загрузки:</strong> @Model.PickupAddress</p>
                                             <p><strong>Адрес доставки:</strong> @Model.DeliveryAddress</p>
-                                            <p><strong>Вес:</strong> @Model.Weight кг</p>
-                                            <p><strong>Тип транспорта:</strong> @Model.VehicleType</p>
+                                            <p><strong>Вес:</strong> @FormatNumber(Model.Weight) кг</p>
+                                            <p><strong>Объем:</strong> @(Model.Volume > 0 ? FormatNumber(Model.Volume) + " м³" : "Не указан")</p>
+                                            @if (Model.CargoType != null && Model.CargoType.ToString() != "None" && Model.CargoType.ToString() != "0")
+                                            {
+                                                <p><strong>Тип груза:</strong> @GetCargoTypeDisplayName(Model.CargoType)</p>
+                                            }
+                                            <p><strong>Тип транспорта:</strong> @GetVehicleTypeDisplayName(Model.VehicleType)</p>
+                                            <p><strong>Дата создания:</strong> @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                                            @if (Model.UpdatedAt.HasValue)
+                                            {
+                                                <p><strong>Последнее обновление:</strong> @Model.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</p>
+                                            }
                                         </div>
                                     </div>
                                 </div>
@@ -111,8 +141,8 @@
                         <div class="alert alert-warning mt-3">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <strong>Внимание:</strong> @(isManagerOrAdmin ?
-                                "Вы можете изменить статус, назначить водителя и цену заказа." :
-                                "Вы можете редактировать только описание, даты и комментарии к заказу.")
+                                                        "Вы можете изменить статус, назначить водителя и цену заказа." :
+                                                        "Вы можете редактировать только описание, даты и комментарии к заказу.")
                         </div>
 
                         <div class="d-flex justify-content-between mt-4">
@@ -120,7 +150,7 @@
                                 <i class="fas fa-arrow-left me-2"></i>Назад
                             </a>
                             <div>
-                                <button type="submit" class="btn btn-primary">
+                                <button type="submit" class="btn btn-primary" id="saveButton">
                                     <i class="fas fa-save me-2"></i>Сохранить
                                 </button>
                             </div>
@@ -133,5 +163,182 @@
 </div>
 
 @section Scripts {
-    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(document).ready(function() {
+            // Автоматическое скрытие alert через 5 секунд
+            setTimeout(function() {
+                $('.alert').fadeOut('slow');
+            }, 5000);
+
+            // Функция для восстановления кнопки
+            function restoreButton() {
+                $('#saveButton').html('<i class="fas fa-save me-2"></i>Сохранить');
+                $('#saveButton').prop('disabled', false);
+            }
+
+            // Обработка отправки формы
+            $('#editForm').submit(function(e) {
+                console.log('Форма отправляется...');
+
+                // Проверка валидации
+                if (!$(this).valid()) {
+                    console.log('Форма не прошла валидацию');
+                    // Восстанавливаем кнопку через 2 секунды если валидация не прошла
+                    setTimeout(restoreButton, 2000);
+                    return true; // Позволяем показать ошибки валидации
+                }
+
+                // Показываем индикатор загрузки
+                $('#saveButton').html('<i class="fas fa-spinner fa-spin me-2"></i>Сохранение...');
+                $('#saveButton').prop('disabled', true);
+
+                // Если форма прошла валидацию, она отправится
+                return true;
+            });
+
+            // Восстанавливаем кнопку если страница перезагружается
+            $(window).on('beforeunload', function() {
+                restoreButton();
+            });
+        });
+    </script>
+}
+
+@functions {
+    // Функция для форматирования чисел (убирает лишние нули)
+    string FormatNumber(decimal number)
+    {
+        // Убираем лишние нули после запятой
+        var str = number.ToString("0.##########");
+
+        // Убираем запятую если после нее только нули
+        if (str.Contains(',') && str.EndsWith(",0"))
+        {
+            str = str.Substring(0, str.Length - 2);
+        }
+        else if (str.Contains(',') && str.EndsWith(",00"))
+        {
+            str = str.Substring(0, str.Length - 3);
+        }
+
+        return str;
+    }
+
+    string GetStatusDisplayName(ShipmentStatus status)
+    {
+        return status switch
+        {
+            ShipmentStatus.Pending => "Ожидает",
+            ShipmentStatus.Processing => "Обрабатывается",
+            ShipmentStatus.Assigned => "Назначен",
+            ShipmentStatus.InTransit => "В пути",
+            ShipmentStatus.Delivered => "Доставлен",
+            ShipmentStatus.Cancelled => "Отменен",
+            _ => status.ToString()
+        };
+    }
+
+    string GetCargoTypeDisplayName(CargoType cargoType)
+    {
+        if (cargoType == null || cargoType.ToString() == "0" || cargoType.ToString() == "None")
+            return "Не указан";
+
+        var name = cargoType.ToString();
+        if (string.IsNullOrEmpty(name))
+            return "Не указан";
+
+        return name switch
+        {
+            "General" => "Обычный груз",
+            "Standard" => "Стандартный",
+            "Fragile" => "Хрупкий",
+            "Perishable" => "Скоропортящийся",
+            "Dangerous" => "Опасный груз",
+            "Hazardous" => "Опасный",
+            "Oversized" => "Крупногабаритный",
+            "Oversize" => "Крупногабаритный",
+            "Large" => "Крупногабаритный",
+            "Liquid" => "Жидкость",
+            "TemperatureControlled" => "Температурный контроль",
+            "Refrigerated" => "Охлаждаемый",
+            "Container" => "Контейнерный",
+            "Bulk" => "Насыпной",
+            "Package" => "Упакованный",
+            "Pallets" => "Паллеты",
+            "Machinery" => "Оборудование",
+            "Equipment" => "Оборудование",
+            "Appliances" => "Бытовая техника",
+            "Electronics" => "Электроника",
+            "Documents" => "Документы",
+            "Food" => "Продукты питания",
+            "Clothing" => "Одежда",
+            "Furniture" => "Мебель",
+            "Construction" => "Строительные материалы",
+            "Medical" => "Медицинские товары",
+            "Chemical" => "Химические вещества",
+            "Automotive" => "Автозапчасти",
+            "Textile" => "Текстиль",
+            "Cosmetics" => "Косметика",
+            "Books" => "Книги",
+            "Toys" => "Игрушки",
+            "Sport" => "Спортивный инвентарь",
+            "Music" => "Музыкальное оборудование",
+            "Art" => "Произведения искусства",
+            "Jewelry" => "Ювелирные изделия",
+            "Plants" => "Растения",
+            "Animals" => "Животные",
+            _ => name
+        };
+    }
+
+    string GetVehicleTypeDisplayName(VehicleType vehicleType)
+    {
+        if (vehicleType == null || vehicleType.ToString() == "0" || vehicleType.ToString() == "None")
+            return "Не указан";
+
+        var name = vehicleType.ToString();
+        if (string.IsNullOrEmpty(name))
+            return "Не указан";
+
+        return name switch
+        {
+            "Truck" => "Грузовик",
+            "Van" => "Фургон",
+            "Refrigerator" => "Рефрижератор",
+            "Refrigerated" => "Рефрижератор",
+            "Tanker" => "Цистерна",
+            "Container" => "Контейнеровоз",
+            "Car" => "Легковой автомобиль",
+            "Minivan" => "Минивэн",
+            "Pickup" => "Пикап",
+            "Trailer" => "Прицеп",
+            "Flatbed" => "Платформа",
+            "Semi" => "Фура",
+            "BoxTruck" => "Бортовой грузовик",
+            "Towing" => "Эвакуатор",
+            "Motorcycle" => "Мотоцикл",
+            "Bicycle" => "Велосипед",
+            "Bus" => "Автобус",
+            "SUV" => "Внедорожник",
+            "Courier" => "Курьерский транспорт",
+            "Any" => "Любой",
+            "Other" => "Другой",
+            "Sedan" => "Седан",
+            "Hatchback" => "Хэтчбек",
+            "Wagon" => "Универсал",
+            "Coupe" => "Купе",
+            "Convertible" => "Кабриолет",
+            "Crossover" => "Кроссовер",
+            "Limousine" => "Лимузин",
+            "Tractor" => "Трактор",
+            "Excavator" => "Экскаватор",
+            "Crane" => "Кран",
+            "Forklift" => "Погрузчик",
+            _ => name
+        };
+    }
 }

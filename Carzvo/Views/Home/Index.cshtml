@@ -34,40 +34,52 @@
         }
     </div>
 
-    <!-- Статистика -->
+    <!-- Статистика - ИСПРАВЛЕННЫЙ ВАРИАНТ -->
     <div class="row mt-5">
-        <div class="col-md-4 mb-4">
+        <div class="col-md-3 mb-4">
             <div class="card shadow border-0 h-100">
                 <div class="card-body text-center">
                     <div class="display-4 text-primary mb-3">
-                        <i class="fas fa-truck-loading"></i>
+                        <i class="fas fa-box"></i>
                     </div>
                     <h3 class="card-title">@ViewData["TotalShipments"]</h3>
-                    <p class="card-text text-muted">Выполненных доставок</p>
+                    <p class="card-text text-muted">Всего заказов</p>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-4 mb-4">
+        <div class="col-md-3 mb-4">
             <div class="card shadow border-0 h-100">
                 <div class="card-body text-center">
                     <div class="display-4 text-warning mb-3">
-                        <i class="fas fa-road"></i>
+                        <i class="fas fa-clock"></i>
                     </div>
-                    <h3 class="card-title">@ViewData["ActiveShipments"]</h3>
-                    <p class="card-text text-muted">Доставок в пути</p>
+                    <h3 class="card-title">@ViewData["PendingShipments"]</h3>
+                    <p class="card-text text-muted">Ожидают обработки</p>
                 </div>
             </div>
         </div>
 
-        <div class="col-md-4 mb-4">
+        <div class="col-md-3 mb-4">
+            <div class="card shadow border-0 h-100">
+                <div class="card-body text-center">
+                    <div class="display-4 text-info mb-3">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <h3 class="card-title">@ViewData["ActiveShipments"]</h3>
+                    <p class="card-text text-muted">В процессе доставки</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
             <div class="card shadow border-0 h-100">
                 <div class="card-body text-center">
                     <div class="display-4 text-success mb-3">
-                        <i class="fas fa-user-tie"></i>
+                        <i class="fas fa-check-circle"></i>
                     </div>
-                    <h3 class="card-title">@ViewData["TotalDrivers"]</h3>
-                    <p class="card-text text-muted">Профессиональных водителей</p>
+                    <h3 class="card-title">@ViewData["DeliveredShipments"]</h3>
+                    <p class="card-text text-muted">Успешно доставлено</p>
                 </div>
             </div>
         </div>
