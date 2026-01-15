@@ -1,153 +1,72 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Carzvo.Models;
-using Carzvo.Models.ViewModels;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
+using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 
 namespace Carzvo.Controllers
 {
+    [Authorize]
     public class AccountController : Controller
     {
-        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
 
         public AccountController(
-            SignInManager<ApplicationUser> signInManager,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            SignInManager<ApplicationUser> signInManager)
         {
-            _signInManager = signInManager;
             _userManager = userManager;
+            _signInManager = signInManager;
         }
 
-        // GET: /Account/Login
-        [HttpGet]
-        public IActionResult Login(string? returnUrl = null)
-        {
-            ViewData["ReturnUrl"] = returnUrl;
-            return View();
-        }
-
-        // POST: /Account/Login
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
-        {
-            ViewData["ReturnUrl"] = returnUrl;
-
-            if (ModelState.IsValid)
-            {
-                var result = await _signInManager.PasswordSignInAsync(
-                    model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
-
-                if (result.Succeeded)
-                {
-                    return RedirectToLocal(returnUrl);
-                }
-
-                ModelState.AddModelError(string.Empty, "Неверный email или пароль");
-            }
-
-            return View(model);
-        }
-
-        // GET: /Account/Register
-        [HttpGet]
-        public IActionResult Register()
-        {
-            return View();
-        }
-
-        // POST: /Account/Register
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Register(RegisterViewModel model)
-        {
-            if (ModelState.IsValid)
-            {
-                var user = new ApplicationUser
-                {
-                    UserName = model.Email,
-                    Email = model.Email,
-                    FullName = model.FullName,
-                    PhoneNumber = model.PhoneNumber,
-                    Address = model.Address,
-                    CompanyName = model.CompanyName
-                };
-
-                var result = await _userManager.CreateAsync(user, model.Password);
-
-                if (result.Succeeded)
-                {
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-                    return RedirectToAction("Index", "Home");
-                }
-
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
-            }
-
-            return View(model);
-        }
-
-        // POST: /Account/Logout
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Logout()
-        {
-            await _signInManager.SignOutAsync();
-            return RedirectToAction("Index", "Home");
-        }
-
-        // GET: /Account/Profile
-        [Authorize]
+        // Профиль пользователя
         [HttpGet]
         public async Task<IActionResult> Profile()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
-                return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
+                return NotFound();
             }
 
             var model = new ProfileViewModel
             {
-                FullName = user.FullName,
                 Email = user.Email,
+                FullName = user.FullName,
+                CompanyName = user.CompanyName,
                 PhoneNumber = user.PhoneNumber,
-                Address = user.Address,
-                CompanyName = user.CompanyName
+                Status = user.Status,
+                EmailConfirmed = user.EmailConfirmed,
+                PhoneNumberConfirmed = user.PhoneNumberConfirmed,
+                Roles = await _userManager.GetRolesAsync(user)
             };
 
             return View(model);
         }
 
-        // POST: /Account/Profile
-        [Authorize]
+        // Обновление профиля
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Profile(ProfileViewModel model)
+        public async Task<IActionResult> UpdateProfile(ProfileViewModel model)
         {
             if (ModelState.IsValid)
             {
                 var user = await _userManager.GetUserAsync(User);
                 if (user == null)
                 {
-                    return NotFound($"Не удалось загрузить пользователя с ID '{_userManager.GetUserId(User)}'.");
+                    return NotFound();
                 }
 
                 user.FullName = model.FullName;
-                user.PhoneNumber = model.PhoneNumber;
-                user.Address = model.Address;
                 user.CompanyName = model.CompanyName;
+                user.PhoneNumber = model.PhoneNumber;
 
                 var result = await _userManager.UpdateAsync(user);
-
                 if (result.Succeeded)
                 {
-                    TempData["SuccessMessage"] = "Профиль успешно обновлен";
+                    TempData["SuccessMessage"] = "Профиль успешно обновлен!";
                     return RedirectToAction("Profile");
                 }
 
@@ -157,59 +76,105 @@ namespace Carzvo.Controllers
                 }
             }
 
-            return View(model);
+            return View("Profile", model);
         }
 
-        // GET: /Account/ChangePassword
-        [Authorize]
+        // Смена пароля
         [HttpGet]
         public IActionResult ChangePassword()
         {
             return View();
         }
 
-        // POST: /Account/ChangePassword
-        [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ChangePassword(ChangePasswordViewModel model)
         {
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null)
-                {
-                    return RedirectToAction("Login");
-                }
+                return View(model);
+            }
 
-                var result = await _userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return NotFound();
+            }
 
-                if (result.Succeeded)
-                {
-                    await _signInManager.SignInAsync(user, isPersistent: false);
-                    TempData["SuccessMessage"] = "Пароль успешно изменен";
-                    return RedirectToAction("Profile");
-                }
+            var changePasswordResult = await _userManager.ChangePasswordAsync(
+                user, model.OldPassword, model.NewPassword);
 
-                foreach (var error in result.Errors)
+            if (!changePasswordResult.Succeeded)
+            {
+                foreach (var error in changePasswordResult.Errors)
                 {
                     ModelState.AddModelError(string.Empty, error.Description);
                 }
+                return View(model);
             }
 
-            return View(model);
+            await _signInManager.RefreshSignInAsync(user);
+            TempData["SuccessMessage"] = "Пароль успешно изменен!";
+            return RedirectToAction("Profile");
         }
 
-        private IActionResult RedirectToLocal(string? returnUrl)
+        // Выход
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Logout(string returnUrl = null)
         {
-            if (Url.IsLocalUrl(returnUrl))
+            await _signInManager.SignOutAsync();
+
+            if (returnUrl != null)
             {
-                return Redirect(returnUrl);
+                return LocalRedirect(returnUrl);
             }
             else
             {
                 return RedirectToAction("Index", "Home");
             }
         }
+    }
+
+    // ViewModels
+    public class ProfileViewModel
+    {
+        public string Email { get; set; }
+
+        [Required(ErrorMessage = "ФИО обязательно")]
+        [Display(Name = "ФИО")]
+        public string FullName { get; set; }
+
+        [Display(Name = "Компания")]
+        public string CompanyName { get; set; }
+
+        [Phone(ErrorMessage = "Неверный формат телефона")]
+        [Display(Name = "Телефон")]
+        public string PhoneNumber { get; set; }
+
+        public string Status { get; set; }
+        public bool EmailConfirmed { get; set; }
+        public bool PhoneNumberConfirmed { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public IList<string> Roles { get; set; }
+    }
+
+    public class ChangePasswordViewModel
+    {
+        [Required(ErrorMessage = "Текущий пароль обязателен")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Текущий пароль")]
+        public string OldPassword { get; set; }
+
+        [Required(ErrorMessage = "Новый пароль обязателен")]
+        [StringLength(100, ErrorMessage = "Пароль должен содержать от {2} до {1} символов", MinimumLength = 6)]
+        [DataType(DataType.Password)]
+        [Display(Name = "Новый пароль")]
+        public string NewPassword { get; set; }
+
+        [DataType(DataType.Password)]
+        [Display(Name = "Подтвердите новый пароль")]
+        [Compare("NewPassword", ErrorMessage = "Пароли не совпадают")]
+        public string ConfirmPassword { get; set; }
     }
 }

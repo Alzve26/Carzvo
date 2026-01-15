@@ -4,23 +4,30 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Carzvo</title>
-    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/Carzvo.styles.css" asp-append-version="true" />
-    <!-- Добавляем Font Awesome для иконок -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
 
-    <!-- ДОБАВЬТЕ ЭТУ СТРОКУ ДЛЯ ПОДДЕРЖКИ СЕКЦИИ STYLES -->
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
     @await RenderSectionAsync("Styles", required: false)
 
     <style>
+        /* Базовые переменные */
         .navbar {
+            background: white;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 1rem 0;
         }
 
         .navbar-brand {
             font-weight: 700;
             font-size: 1.5rem;
+            color: #4361ee !important;
         }
 
         .nav-link {
@@ -28,177 +35,258 @@
             padding: 0.5rem 1rem;
             border-radius: 0.25rem;
             transition: all 0.3s ease;
+            color: #495057 !important;
         }
 
             .nav-link:hover {
-                background-color: rgba(13, 110, 253, 0.1);
+                background-color: rgba(67, 97, 238, 0.1);
                 transform: translateY(-1px);
+                color: #4361ee !important;
             }
 
             .nav-link.active {
-                background-color: rgba(13, 110, 253, 0.15);
-                color: #0d6efd !important;
+                background-color: rgba(67, 97, 238, 0.15);
+                color: #4361ee !important;
             }
 
         .footer {
-            margin-top: 2rem;
+            margin-top: auto;
             padding: 1.5rem 0;
+            background: #2b2d42;
+            color: white;
         }
 
-        .navbar-brand i {
-            color: #0d6efd;
+        .breadcrumb {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 600;
+        }
+
+            .btn-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+            }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+            .card:hover {
+                transform: translateY(-3px);
+                transition: transform 0.3s ease;
+            }
+
+        /* Анимации через transition */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+            .fade-in.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+        /* Адаптивность через JS */
+        .desktop-only {
+            display: block;
+        }
+
+        .mobile-only {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
-                    <i class="fas fa-truck-fast me-2"></i>
-                    <span>Carzvo</span>
-                </a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
-                                <i class="fas fa-home me-2"></i>
-                                <span>Главная</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Privacy">
-                                <i class="fas fa-shield-alt me-2"></i>
-                                <span>Политика</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Dashboard">
-                                <i class="fas fa-user-circle me-2"></i>
-                                <span>Личный кабинет</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark d-flex align-items-center" asp-area="" asp-controller="Shipments" asp-action="Index">
-                                <i class="fas fa-box me-2"></i>
-                                <span>Мои заказы</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark d-flex align-items-center" asp-area="" asp-controller="Shipments" asp-action="Create">
-                                <i class="fas fa-plus-circle me-2"></i>
-                                <span>Новая доставка</span>
-                            </a>
-                        </li>
-                    </ul>
-                    <!-- Если используете Identity, добавьте Partial -->
-                    <partial name="_LoginPartial" />
-                </div>
-            </div>
-        </nav>
-    </header>
+    <div style="min-height: 100vh; display: flex; flex-direction: column;">
+        <header>
+            <nav class="navbar navbar-expand-lg navbar-light">
+                <div class="container">
+                    <!-- Логотип -->
+                    <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
+                        <i class="fas fa-truck-fast me-2"></i>
+                        <span>Carzvo</span>
+                    </a>
 
-    <div class="container">
+                    <!-- Кнопка мобильного меню -->
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+
+                    <!-- Основное меню -->
+                    <div class="collapse navbar-collapse" id="navbarMain">
+                        <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" asp-controller="Home" asp-action="Index">
+                                    <i class="fas fa-home me-2"></i>
+                                    Главная
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" asp-controller="Shipments" asp-action="Index">
+                                    <i class="fas fa-box me-2"></i>
+                                    Мои заказы
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" asp-controller="Shipments" asp-action="Create">
+                                    <i class="fas fa-plus-circle me-2"></i>
+                                    Новая доставка
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link d-flex align-items-center" asp-controller="Home" asp-action="Dashboard">
+                                    <i class="fas fa-tachometer-alt me-2"></i>
+                                    Панель управления
+                                </a>
+                            </li>
+                        </ul>
+
+                        <!-- Правая часть навигации -->
+                        <div class="d-flex align-items-center">
+                            <partial name="_LoginPartial" />
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
         <!-- Хлебные крошки -->
         @if (ViewContext.RouteData.Values["controller"]?.ToString() != "Home" || ViewContext.RouteData.Values["action"]?.ToString() != "Index")
         {
-            <nav aria-label="breadcrumb" class="mb-4">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item">
-                        <a asp-controller="Home" asp-action="Index">
-                            <i class="fas fa-home me-1"></i>Главная
-                        </a>
-                    </li>
-
-                    <!-- Контроллер -->
-                    @if (ViewContext.RouteData.Values["controller"]?.ToString() != "Home")
-                    {
+            <div class="container">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
                         <li class="breadcrumb-item">
-                            @{
-                                var controllerName = ViewContext.RouteData.Values["controller"]?.ToString();
-                                var controllerDisplayName = controllerName switch
-                                {
-                                    "Home" => "Главная",
-                                    "Shipments" => "Мои заказы",
-                                    "Admin" => "Админ",
-                                    _ => controllerName
-                                };
-                            }
-                            <a asp-controller="@controllerName" asp-action="Index">@controllerDisplayName</a>
+                            <a asp-controller="Home" asp-action="Index">
+                                <i class="fas fa-home me-1"></i>Главная
+                            </a>
                         </li>
-                    }
 
-                    <!-- Действие -->
-                    @if (ViewContext.RouteData.Values["action"]?.ToString() != "Index")
-                    {
-                        <li class="breadcrumb-item active" aria-current="page">
-                            @{
-                                var actionName = ViewContext.RouteData.Values["action"]?.ToString();
-                                var actionDisplayName = actionName switch
-                                {
-                                    "Create" => "Новая доставка",
-                                    "Edit" => "Редактирование",
-                                    "Details" => "Просмотр",
-                                    "Privacy" => "Политика",
-                                    "Dashboard" => "Личный кабинет",
-                                    "About" => "О нас",
-                                    "Contact" => "Контакты",
-                                    "Services" => "Услуги",
-                                    _ => actionName
-                                };
-                            }
-                            @actionDisplayName
-                        </li>
-                    }
-                </ol>
-            </nav>
+                        @if (ViewContext.RouteData.Values["controller"]?.ToString() != "Home")
+                        {
+                            <li class="breadcrumb-item">
+                                @{
+                                    var controllerName = ViewContext.RouteData.Values["controller"]?.ToString();
+                                    var controllerDisplayName = controllerName switch
+                                    {
+                                        "Home" => "Главная",
+                                        "Shipments" => "Заказы",
+                                        "Account" => "Аккаунт",
+                                        "Dashboard" => "Панель управления",
+                                        "Admin" => "Админ",
+                                        _ => controllerName
+                                    };
+                                }
+                                <a asp-controller="@controllerName" asp-action="Index">@controllerDisplayName</a>
+                            </li>
+                        }
+
+                        @if (ViewContext.RouteData.Values["action"]?.ToString() != "Index")
+                        {
+                            <li class="breadcrumb-item active">
+                                @{
+                                    var actionName = ViewContext.RouteData.Values["action"]?.ToString();
+                                    var actionDisplayName = actionName switch
+                                    {
+                                        "Create" => "Новая доставка",
+                                        "Edit" => "Редактирование",
+                                        "Details" => "Детали",
+                                        "Privacy" => "Политика",
+                                        "Dashboard" => "Панель управления",
+                                        "Login" => "Вход",
+                                        "Register" => "Регистрация",
+                                        "Profile" => "Профиль",
+                                        "ChangePassword" => "Смена пароля",
+                                        _ => actionName
+                                    };
+                                }
+                                @actionDisplayName
+                            </li>
+                        }
+                    </ol>
+                </nav>
+            </div>
         }
 
-        <main role="main" class="pb-3">
+        <!-- Основной контент -->
+        <main role="main" class="container flex-grow-1 fade-in">
             @RenderBody()
         </main>
-    </div>
 
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    &copy; @DateTime.Now.Year - Carzvo - Доставка грузов
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <a asp-area="" asp-controller="Home" asp-action="Privacy" class="text-muted me-3">
-                        <i class="fas fa-shield-alt me-1"></i>Политика конфиденциальности
-                    </a>
-                    <a href="#" class="text-muted me-3">
-                        <i class="fas fa-question-circle me-1"></i>Помощь
-                    </a>
-                    <a href="#" class="text-muted">
-                        <i class="fas fa-phone me-1"></i>Контакты
-                    </a>
+        <!-- Футер -->
+        <footer class="footer mt-auto">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-truck-fast me-2"></i>
+                            <span class="fw-bold">Carzvo</span>
+                        </div>
+                        <p class="mb-0">&copy; @DateTime.Now.Year - Доставка грузов</p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <a asp-controller="Home" asp-action="Privacy" class="text-white me-3">
+                            Политика
+                        </a>
+                        <a href="#" class="text-white me-3">
+                            Помощь
+                        </a>
+                        <a href="#" class="text-white">
+                            Контакты
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
-    </footer>
+        </footer>
+    </div>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Скрипты -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
 
     <script>
-        // Подсветка активного пункта меню
         $(document).ready(function() {
+            // Подсветка активного пункта меню
             var currentPath = window.location.pathname;
             $('.nav-link').each(function() {
                 var linkPath = $(this).attr('href');
                 if (currentPath === linkPath ||
-                   (currentPath.startsWith(linkPath) && linkPath !== '/')) {
+                    (currentPath.startsWith(linkPath) && linkPath !== '/')) {
                     $(this).addClass('active');
                 }
             });
+
+            // Анимация появления
+            $('.fade-in').addClass('show');
+
+            // Адаптивность
+            function checkResponsive() {
+                if (window.innerWidth <= 768) {
+                    $('.desktop-only').hide();
+                    $('.mobile-only').show();
+                } else {
+                    $('.desktop-only').show();
+                    $('.mobile-only').hide();
+                }
+            }
+
+            checkResponsive();
+            $(window).resize(checkResponsive);
         });
     </script>
 

@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using Carzvo.Data;
 using Carzvo.Models;
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,8 +37,8 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
     options.Lockout.AllowedForNewUsers = true;
 })
 .AddEntityFrameworkStores<ApplicationDbContext>()
-.AddDefaultTokenProviders()
-.AddDefaultUI();
+.AddDefaultTokenProviders();
+// Убрали .AddDefaultUI() чтобы использовать наши кастомные страницы
 
 // НАСТРОЙКА COOKIE С ОБРАБОТЧИКОМ ДЛЯ НАЗНАЧЕНИЯ РОЛИ
 builder.Services.ConfigureApplicationCookie(options =>
@@ -95,6 +97,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 // Добавление контроллеров с представлениями
 builder.Services.AddControllersWithViews()
     .AddRazorRuntimeCompilation();
+builder.Services.AddControllersWithViews();
 
 // В Program.cs, в секцию конфигурации сервисов (builder.Services...)
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");

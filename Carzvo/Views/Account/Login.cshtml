@@ -1,160 +1,125 @@
 ﻿@model Carzvo.Models.ViewModels.LoginViewModel
 @{
     ViewData["Title"] = "Вход в систему";
+    Layout = "_LayoutAuth"; // Можно создать отдельный лейаут для аутентификации
 }
 
-<style>
-    .auth-card {
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-        border: none;
-    }
-
-    .auth-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 15px 15px 0 0;
-        padding: 2rem;
-    }
-
-    .auth-body {
-        padding: 2.5rem;
-    }
-
-    .form-control {
-        padding: 0.75rem 1rem;
-        border-radius: 10px;
-        border: 1px solid #e1e5e9;
-        transition: all 0.3s;
-    }
-
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-
-    .btn-login {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        color: white;
-        padding: 0.75rem;
-        border-radius: 10px;
-        font-weight: 600;
-        transition: all 0.3s;
-    }
-
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 7px 14px rgba(102, 126, 234, 0.25);
-        }
-
-    .auth-links a {
-        color: #667eea;
-        text-decoration: none;
-        transition: color 0.3s;
-    }
-
-        .auth-links a:hover {
-            color: #764ba2;
-            text-decoration: underline;
-        }
-
-    .validation-summary-errors {
-        background-color: #fee;
-        border-left: 4px solid #dc3545;
-        padding: 1rem;
-        border-radius: 5px;
-        margin-bottom: 1.5rem;
-    }
-</style>
-
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-            <div class="card auth-card">
-                <div class="auth-header text-center">
-                    <h2 class="mb-3">
-                        <i class="fas fa-sign-in-alt me-2"></i>@ViewData["Title"]
-                    </h2>
-                    <p class="mb-0 opacity-75">Войдите в свой аккаунт для продолжения</p>
-                </div>
-
-                <div class="auth-body">
-                    <!-- Ошибки валидации -->
-                    @if (!ViewData.ModelState.IsValid)
-                    {
-                        <div class="alert alert-danger" role="alert">
-                            <h5 class="alert-heading">Ошибки при входе:</h5>
-                            <div asp-validation-summary="All" class="mb-0"></div>
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="auth-card">
+                    <div class="auth-header">
+                        <div class="brand-logo">
+                            <i class="fas fa-car"></i>Carzvo
                         </div>
-                    }
+                        <h2><i class="fas fa-sign-in-alt me-2"></i>@ViewData["Title"]</h2>
+                        <p class="mb-0">Добро пожаловать обратно! Пожалуйста, войдите в свой аккаунт</p>
+                    </div>
 
-                    <form asp-action="Login" method="post">
-                        @Html.AntiForgeryToken()
+                    <div class="auth-body">
+                        <form asp-action="Login" method="post">
+                            <div asp-validation-summary="ModelOnly" class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <i class="fas fa-exclamation-circle me-2"></i>
+                                <span>Пожалуйста, исправьте ошибки ниже</span>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
 
-                        <!-- Email -->
-                        <div class="mb-4">
-                            <label asp-for="Email" class="form-label fw-bold">Электронная почта</label>
-                            <input asp-for="Email" class="form-control"
-                                   placeholder="Введите ваш email" required>
-                            <span asp-validation-for="Email" class="text-danger small"></span>
-                        </div>
+                            <!-- Email Field -->
+                            <div class="mb-4">
+                                <label asp-for="Email" class="form-label">
+                                    <i class="fas fa-envelope me-2"></i>Email адрес
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="fas fa-user text-primary"></i>
+                                    </span>
+                                    <input asp-for="Email" class="form-control" placeholder="Введите ваш email" />
+                                </div>
+                                <span asp-validation-for="Email" class="text-danger small mt-1 d-block">
+                                    <i class="fas fa-exclamation-circle me-1"></i>
+                                </span>
+                            </div>
 
-                        <!-- Пароль -->
-                        <div class="mb-4">
-                            <label asp-for="Password" class="form-label fw-bold">Пароль</label>
-                            <div class="input-group">
-                                <input asp-for="Password" class="form-control"
-                                       type="password" placeholder="Введите ваш пароль" required>
-                                <button class="btn btn-outline-secondary" type="button"
-                                        id="togglePassword">
-                                    <i class="fas fa-eye"></i>
+                            <!-- Password Field -->
+                            <div class="mb-4">
+                                <label asp-for="Password" class="form-label">
+                                    <i class="fas fa-lock me-2"></i>Пароль
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light">
+                                        <i class="fas fa-key text-primary"></i>
+                                    </span>
+                                    <input asp-for="Password" type="password" class="form-control"
+                                           placeholder="Введите ваш пароль" id="passwordInput" />
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger small mt-1 d-block">
+                                    <i class="fas fa-exclamation-circle me-1"></i>
+                                </span>
+                            </div>
+
+                            <!-- Remember Me & Forgot Password -->
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" asp-for="RememberMe" id="rememberMe">
+                                    <label class="form-check-label" for="rememberMe">
+                                        Запомнить меня
+                                    </label>
+                                </div>
+                                <a href="#" class="text-decoration-none small">
+                                    <i class="fas fa-question-circle me-1"></i>Забыли пароль?
+                                </a>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="d-grid mb-4">
+                                <button type="submit" class="btn btn-auth btn-lg">
+                                    <i class="fas fa-sign-in-alt me-2"></i>Войти в систему
                                 </button>
                             </div>
-                            <span asp-validation-for="Password" class="text-danger small"></span>
-                        </div>
 
-                        <!-- Запомнить меня -->
-                        <div class="mb-4 form-check">
-                            <input asp-for="RememberMe" class="form-check-input"
-                                   type="checkbox">
-                            <label asp-for="RememberMe" class="form-check-label">
-                                Запомнить меня
-                            </label>
-                        </div>
+                            <!-- Divider -->
+                            <div class="divider">
+                                <span>ИЛИ</span>
+                            </div>
 
-                        <!-- Кнопка входа -->
-                        <div class="d-grid mb-4">
-                            <button type="submit" class="btn btn-login btn-lg">
-                                <i class="fas fa-sign-in-alt me-2"></i>Войти
-                            </button>
-                        </div>
+                            <!-- Register Link -->
+                            <div class="text-center mt-4">
+                                <p class="mb-2">Еще нет аккаунта?</p>
+                                <a asp-action="Register" class="btn btn-outline-primary btn-lg w-100">
+                                    <i class="fas fa-user-plus me-2"></i>Создать новый аккаунт
+                                </a>
+                            </div>
 
-                        <!-- Ссылки -->
-                        <div class="auth-links text-center">
-                            <div class="row">
-                                <div class="col-md-6 mb-2">
-                                    <a asp-action="Register" class="d-block">
-                                        <i class="fas fa-user-plus me-1"></i>Регистрация
+                            <!-- Social Login (опционально) -->
+                            <div class="text-center mt-4">
+                                <p class="small text-muted">Войти через социальные сети</p>
+                                <div class="d-flex justify-content-center gap-3">
+                                    <a href="#" class="btn btn-outline-danger rounded-circle p-3">
+                                        <i class="fab fa-google"></i>
                                     </a>
-                                </div>
-                                <div class="col-md-6 mb-2">
-                                    <a href="#" class="d-block">
-                                        <i class="fas fa-key me-1"></i>Забыли пароль?
+                                    <a href="#" class="btn btn-outline-primary rounded-circle p-3">
+                                        <i class="fab fa-facebook-f"></i>
+                                    </a>
+                                    <a href="#" class="btn btn-outline-info rounded-circle p-3">
+                                        <i class="fab fa-twitter"></i>
                                     </a>
                                 </div>
                             </div>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Информация -->
-            <div class="text-center mt-4">
-                <p class="text-muted">
-                    <i class="fas fa-info-circle me-1"></i>
-                    Для доступа к заказам требуется авторизация
-                </p>
+                <!-- Footer Note -->
+                <div class="text-center mt-4">
+                    <p class="text-white small">
+                        © 2024 Carzvo. Все права защищены.
+                        <a href="#" class="text-white text-decoration-underline ms-2">Политика конфиденциальности</a>
+                    </p>
+                </div>
             </div>
         </div>
     </div>
@@ -162,23 +127,36 @@
 
 @section Scripts {
     <script>
-        $(document).ready(function() {
-            // Показать/скрыть пароль
-            $('#togglePassword').click(function() {
-                const passwordInput = $('#Password');
-                const icon = $(this).find('i');
+        // Toggle password visibility
+        document.getElementById('togglePassword').addEventListener('click', function() {
+            const passwordInput = document.getElementById('passwordInput');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
 
-                if (passwordInput.attr('type') === 'password') {
-                    passwordInput.attr('type', 'text');
-                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
-                } else {
-                    passwordInput.attr('type', 'password');
-                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
-                }
+            // Toggle eye icon
+            this.innerHTML = type === 'password'
+                ? '<i class="fas fa-eye"></i>'
+                : '<i class="fas fa-eye-slash"></i>';
+        });
+
+        // Add focus effects
+        document.querySelectorAll('.form-control').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.classList.add('focus');
             });
 
-            // Автофокус на первое поле
-            $('#Email').focus();
+            input.addEventListener('blur', function() {
+                this.parentElement.classList.remove('focus');
+            });
+        });
+
+        // Form validation styling
+        $('form').validate({
+            errorClass: 'is-invalid',
+            validClass: 'is-valid',
+            errorPlacement: function(error, element) {
+                error.appendTo(element.parent().parent());
+            }
         });
     </script>
 }

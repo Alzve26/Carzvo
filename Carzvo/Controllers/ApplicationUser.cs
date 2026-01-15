@@ -39,6 +39,7 @@ namespace Carzvo.Models
         [Display(Name = "Дата регистрации")]
         public DateTime RegistrationDate { get; set; } = DateTime.Now;
 
+
         // Навигационные свойства
         public virtual ICollection<Shipment>? CreatedShipments { get; set; }
         public virtual ICollection<Shipment>? AssignedShipments { get; set; }
