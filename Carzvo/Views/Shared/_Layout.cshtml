@@ -136,21 +136,15 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link d-flex align-items-center" asp-controller="Shipments" asp-action="Index">
-                                    <i class="fas fa-box me-2"></i>
-                                    Мои заказы
+                                <a class="nav-link d-flex align-items-center" asp-controller="Home" asp-action="Dashboard">
+                                    <i class="fas fa-boxes me-2"></i>  <!-- Изменена иконка -->
+                                    Заказы  <!-- Изменено с "Панель управления" -->
                                 </a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link d-flex align-items-center" asp-controller="Shipments" asp-action="Create">
                                     <i class="fas fa-plus-circle me-2"></i>
                                     Новая доставка
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link d-flex align-items-center" asp-controller="Home" asp-action="Dashboard">
-                                    <i class="fas fa-tachometer-alt me-2"></i>
-                                    Панель управления
                                 </a>
                             </li>
                         </ul>
@@ -186,7 +180,7 @@
                                         "Home" => "Главная",
                                         "Shipments" => "Заказы",
                                         "Account" => "Аккаунт",
-                                        "Dashboard" => "Панель управления",
+                                        "Dashboard" => "Заказы",
                                         "Admin" => "Админ",
                                         _ => controllerName
                                     };
@@ -206,7 +200,7 @@
                                         "Edit" => "Редактирование",
                                         "Details" => "Детали",
                                         "Privacy" => "Политика",
-                                        "Dashboard" => "Панель управления",
+                                        "Dashboard" => "Заказы",
                                         "Login" => "Вход",
                                         "Register" => "Регистрация",
                                         "Profile" => "Профиль",

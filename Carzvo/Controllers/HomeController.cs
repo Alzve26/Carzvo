@@ -72,7 +72,7 @@ namespace Carzvo.Controllers
 
                 var model = new DashboardViewModel();
 
-                if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+                if (User.IsInRole("Admin")  || User.IsInRole("Manager"))
                 {
                     model.IsAdminOrManager = true;
                     model.TotalShipments = await _context.Shipments.CountAsync();

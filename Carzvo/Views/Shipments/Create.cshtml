@@ -190,8 +190,9 @@
 
                         <!-- Кнопки -->
                         <div class="d-flex justify-content-between mt-4 pt-3 border-top">
-                            <a asp-action="Index" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>Назад к списку заказов
+                            <a asp-controller="Home" asp-action="Dashboard" class="btn btn-secondary">
+                                <!-- ИЗМЕНЕНО -->
+                                <i class="fas fa-boxes me-2"></i>Назад к списку заказов
                             </a>
                             <button type="submit" class="btn btn-primary" id="submitButton">
                                 <i class="fas fa-check me-2"></i>Создать заказ

@@ -21,64 +21,6 @@ namespace Carzvo.Controllers
             _signInManager = signInManager;
         }
 
-        // Профиль пользователя
-        [HttpGet]
-        public async Task<IActionResult> Profile()
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            var model = new ProfileViewModel
-            {
-                Email = user.Email,
-                FullName = user.FullName,
-                CompanyName = user.CompanyName,
-                PhoneNumber = user.PhoneNumber,
-                Status = user.Status,
-                EmailConfirmed = user.EmailConfirmed,
-                PhoneNumberConfirmed = user.PhoneNumberConfirmed,
-                Roles = await _userManager.GetRolesAsync(user)
-            };
-
-            return View(model);
-        }
-
-        // Обновление профиля
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateProfile(ProfileViewModel model)
-        {
-            if (ModelState.IsValid)
-            {
-                var user = await _userManager.GetUserAsync(User);
-                if (user == null)
-                {
-                    return NotFound();
-                }
-
-                user.FullName = model.FullName;
-                user.CompanyName = model.CompanyName;
-                user.PhoneNumber = model.PhoneNumber;
-
-                var result = await _userManager.UpdateAsync(user);
-                if (result.Succeeded)
-                {
-                    TempData["SuccessMessage"] = "Профиль успешно обновлен!";
-                    return RedirectToAction("Profile");
-                }
-
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(string.Empty, error.Description);
-                }
-            }
-
-            return View("Profile", model);
-        }
-
         // Смена пароля
         [HttpGet]
         public IActionResult ChangePassword()
@@ -134,29 +76,6 @@ namespace Carzvo.Controllers
                 return RedirectToAction("Index", "Home");
             }
         }
-    }
-
-    // ViewModels
-    public class ProfileViewModel
-    {
-        public string Email { get; set; }
-
-        [Required(ErrorMessage = "ФИО обязательно")]
-        [Display(Name = "ФИО")]
-        public string FullName { get; set; }
-
-        [Display(Name = "Компания")]
-        public string CompanyName { get; set; }
-
-        [Phone(ErrorMessage = "Неверный формат телефона")]
-        [Display(Name = "Телефон")]
-        public string PhoneNumber { get; set; }
-
-        public string Status { get; set; }
-        public bool EmailConfirmed { get; set; }
-        public bool PhoneNumberConfirmed { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public IList<string> Roles { get; set; }
     }
 
     public class ChangePasswordViewModel

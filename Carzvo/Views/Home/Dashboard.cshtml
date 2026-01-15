@@ -1,7 +1,7 @@
 ﻿@model Carzvo.Models.DashboardViewModel
 @using Carzvo.Models
 @{
-    ViewData["Title"] = "Личный кабинет";
+    ViewData["Title"] = "Заказы";
     var userName = ViewData["UserName"] as string ?? "Пользователь";
     var userRole = ViewData["UserRole"] as string ?? "Пользователь";
 }
@@ -13,7 +13,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h1 class="h3 mb-2"><i class="fas fa-user-circle me-2"></i>Добро пожаловать, @userName!</h1>
+                            <h1 class="h3 mb-2"><i class="fas fa-boxes me-2"></i>Мои заказы</h1>
                             <p class="text-muted mb-0">
                                 <span class="badge bg-primary">@userRole</span>
                                 <span class="ms-2">@DateTime.Now.ToString("dd MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("ru-RU"))</span>
@@ -134,7 +134,7 @@
                                                         <!-- Удалить -->
                                                         @if (shipment.Status == ShipmentStatus.Pending)
                                                         {
-                                                            <form asp-action="Delete" method="post" style="display: inline;">
+                                                            <form asp-controller="Shipments" asp-action="Delete" method="post" style="display: inline;">
                                                                 <input type="hidden" name="id" value="@shipment.Id" />
                                                                 @Html.AntiForgeryToken()
                                                                 <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center"
@@ -321,7 +321,7 @@
                                                             </a>
 
                                                             <!-- Удалить -->
-                                                            <form asp-action="Delete" method="post" style="display: inline;">
+                                                            <form asp-controller="Shipments" asp-action="Delete" method="post" style="display: inline;">
                                                                 <input type="hidden" name="id" value="@shipment.Id" />
                                                                 @Html.AntiForgeryToken()
                                                                 <button type="submit" class="btn btn-danger btn-sm d-flex align-items-center"
@@ -379,14 +379,14 @@
                                     case ShipmentStatus.InTransit:
                                     case ShipmentStatus.Assigned:
                                     case ShipmentStatus.Processing:
-                                    activeOrders++;
-                                    break;
+                                        activeOrders++;
+                                        break;
                                     case ShipmentStatus.Delivered:
-                                    deliveredOrders++;
-                                    break;
+                                        deliveredOrders++;
+                                        break;
                                     case ShipmentStatus.Pending:
-                                    pendingOrders++;
-                                    break;
+                                        pendingOrders++;
+                                        break;
                                 }
                             }
 
@@ -422,22 +422,8 @@
                     </div>
                 </div>
 
-                <!-- Быстрые действия -->
-                <div class="card">
-                    <div class="card-header">
-                        <h6 class="mb-0"><i class="fas fa-bolt me-2"></i>Быстрые действия</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <a asp-controller="Shipments" asp-action="Create" class="btn btn-primary d-flex align-items-center justify-content-center">
-                                <i class="fas fa-plus me-2"></i>Новая доставка
-                            </a>
-                            <a asp-area="Identity" asp-page="/Account/Manage/Index" class="btn btn-outline-secondary d-flex align-items-center justify-content-center">
-                                <i class="fas fa-user-edit me-2"></i>Профиль
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <!-- УДАЛЕН: Блок "Быстрые действия" -->
+
             </div>
         </div>
     }
@@ -564,19 +550,19 @@
         switch (status)
         {
             case ShipmentStatus.Pending:
-            return "bg-warning text-dark";
+                return "bg-warning text-dark";
             case ShipmentStatus.Processing:
-            return "bg-info text-white";
+                return "bg-info text-white";
             case ShipmentStatus.Assigned:
-            return "bg-primary text-white";
+                return "bg-primary text-white";
             case ShipmentStatus.InTransit:
-            return "bg-success text-white";
+                return "bg-success text-white";
             case ShipmentStatus.Delivered:
-            return "bg-success text-white";
+                return "bg-success text-white";
             case ShipmentStatus.Cancelled:
-            return "bg-danger text-white";
+                return "bg-danger text-white";
             default:
-            return "bg-secondary text-white";
+                return "bg-secondary text-white";
         }
     }
 
@@ -585,19 +571,19 @@
         switch (status)
         {
             case ShipmentStatus.Pending:
-            return "Ожидает";
+                return "Ожидает";
             case ShipmentStatus.Processing:
-            return "Обрабатывается";
+                return "Обрабатывается";
             case ShipmentStatus.Assigned:
-            return "Назначен";
+                return "Назначен";
             case ShipmentStatus.InTransit:
-            return "В пути";
+                return "В пути";
             case ShipmentStatus.Delivered:
-            return "Доставлен";
+                return "Доставлен";
             case ShipmentStatus.Cancelled:
-            return "Отменен";
+                return "Отменен";
             default:
-            return status.ToString();
+                return status.ToString();
         }
     }
 }
