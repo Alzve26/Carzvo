@@ -96,6 +96,17 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddControllersWithViews()
     .AddRazorRuntimeCompilation();
 
+// В Program.cs, в секцию конфигурации сервисов (builder.Services...)
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supportedCultures = new[] { new CultureInfo("ru-RU") };
+    options.DefaultRequestCulture = new RequestCulture("ru-RU");
+    options.SupportedCultures = supportedCultures;
+    options.SupportedUICultures = supportedCultures;
+});
+
 // Добавление Razor Pages
 builder.Services.AddRazorPages();
 
@@ -107,7 +118,14 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
+// ★ ВАЖНО: Создание приложения должно быть ВЫШЕ, чем использование app ★
 var app = builder.Build();
+
+// ★ ПЕРЕНЕСЕНО СЮДА: Настройка маршрута для Account ★
+app.MapControllerRoute(
+    name: "account",
+    pattern: "account/{action=Login}/{id?}",
+    defaults: new { controller = "Account" });
 
 // Конфигурация pipeline
 if (!app.Environment.IsDevelopment())

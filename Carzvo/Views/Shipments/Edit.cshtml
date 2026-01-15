@@ -7,18 +7,50 @@
     var isManagerOrAdmin = User.IsInRole("Manager") || User.IsInRole("Admin");
 }
 
+<style>
+    .form-card {
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+        .form-card .card-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 2px solid #dee2e6;
+        }
+
+    .info-card {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+    }
+
+    .required::after {
+        content: " *";
+        color: #dc3545;
+    }
+</style>
+
 <div class="container mt-4">
     <div class="row justify-content-center">
         <div class="col-md-10">
-            <div class="card">
+            <div class="card form-card">
                 <div class="card-header">
-                    <h4><i class="fas fa-edit me-2"></i>@ViewData["Title"]</h4>
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>@ViewData["Title"]
+                    </h4>
                 </div>
                 <div class="card-body">
                     @if (TempData["SuccessMessage"] != null)
                     {
                         <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
-                            <i class="fas fa-check-circle me-2"></i>@TempData["SuccessMessage"]
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-check-circle fa-lg me-3"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-1">Успешно!</h5>
+                                    <p class="mb-0">@TempData["SuccessMessage"]</p>
+                                </div>
+                            </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         </div>
                     }
@@ -26,8 +58,22 @@
                     @if (TempData["ErrorMessage"] != null)
                     {
                         <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-                            <i class="fas fa-exclamation-circle me-2"></i>@TempData["ErrorMessage"]
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-circle fa-lg me-3"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-1">Ошибка!</h5>
+                                    <p class="mb-0">@TempData["ErrorMessage"]</p>
+                                </div>
+                            </div>
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger mb-4">
+                            <h5 class="alert-heading">Исправьте следующие ошибки:</h5>
+                            <div asp-validation-summary="All" class="mb-0"></div>
                         </div>
                     }
 
@@ -37,15 +83,54 @@
                         <input type="hidden" asp-for="UserId" />
                         <input type="hidden" asp-for="CreatedAt" />
 
+                        <!-- ДОБАВЛЕНО: скрытые поля для адресов, чтобы они передавались на сервер -->
+                        <input type="hidden" asp-for="PickupAddress" />
+                        <input type="hidden" asp-for="DeliveryAddress" />
+                        <input type="hidden" asp-for="Weight" />
+                        <input type="hidden" asp-for="Volume" />
+                        <input type="hidden" asp-for="CargoType" />
+                        <input type="hidden" asp-for="VehicleType" />
+
                         @Html.AntiForgeryToken()
 
                         <div class="row">
                             <!-- Для обычных пользователей -->
                             @if (!isManagerOrAdmin)
                             {
+                                <!-- ДОБАВЛЕНО: информация об адресах для обычных пользователей -->
+                                <div class="col-md-12 mb-4">
+                                    <div class="card info-card">
+                                        <div class="card-body">
+                                            <h6 class="card-title mb-3">
+                                                <i class="fas fa-map-marker-alt me-2"></i>Информация о маршруте
+                                            </h6>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <div class="text-muted small">Адрес загрузки</div>
+                                                    <div class="fw-medium">@Model.PickupAddress</div>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <div class="text-muted small">Адрес доставки</div>
+                                                    <div class="fw-medium">@Model.DeliveryAddress</div>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <div class="text-muted small">Вес</div>
+                                                    <div class="fw-medium">@FormatNumber(Model.Weight) кг</div>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <div class="text-muted small">Объем</div>
+                                                    <div class="fw-medium">@(Model.Volume > 0 ? FormatNumber(Model.Volume) + " м³" : "Не указан")</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label asp-for="Description" class="form-label">Описание груза</label>
+                                        <label asp-for="Description" class="form-label required">Описание груза</label>
                                         <textarea asp-for="Description" class="form-control" rows="3" required></textarea>
                                         <span asp-validation-for="Description" class="text-danger"></span>
                                     </div>
@@ -54,13 +139,13 @@
                                 <div class="col-md-6">
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
-                                            <label asp-for="PickupDate" class="form-label">Дата загрузки</label>
+                                            <label asp-for="PickupDate" class="form-label required">Дата загрузки</label>
                                             <input asp-for="PickupDate" class="form-control" type="datetime-local" required>
                                             <span asp-validation-for="PickupDate" class="text-danger"></span>
                                         </div>
 
                                         <div class="col-md-6 mb-3">
-                                            <label asp-for="DeliveryDate" class="form-label">Дата доставки</label>
+                                            <label asp-for="DeliveryDate" class="form-label required">Дата доставки</label>
                                             <input asp-for="DeliveryDate" class="form-control" type="datetime-local" required>
                                             <span asp-validation-for="DeliveryDate" class="text-danger"></span>
                                         </div>
@@ -78,7 +163,7 @@
                                 <!-- Для менеджеров и админов -->
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label asp-for="Status" class="form-label">Статус</label>
+                                        <label asp-for="Status" class="form-label required">Статус</label>
                                         <select asp-for="Status" class="form-select" required>
                                             @foreach (var status in Enum.GetValues(typeof(ShipmentStatus)).Cast<ShipmentStatus>())
                                             {
@@ -101,7 +186,7 @@
                                     </div>
 
                                     <div class="mb-3">
-                                        <label asp-for="Price" class="form-label">Цена</label>
+                                        <label asp-for="Price" class="form-label">Цена (₽)</label>
                                         <div class="input-group">
                                             <span class="input-group-text">₽</span>
                                             <input asp-for="Price" class="form-control" type="number" step="0.01" min="0">
@@ -111,26 +196,87 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <div class="card bg-light">
+                                    <div class="card info-card">
                                         <div class="card-body">
-                                            <h6><i class="fas fa-info-circle me-2"></i>Информация о заказе</h6>
-                                            <hr>
-                                            <p><strong>№ Заказа:</strong> @Model.OrderNumber</p>
-                                            <p><strong>Клиент:</strong> @Model.User?.FullName</p>
-                                            <p><strong>Телефон:</strong> @Model.User?.PhoneNumber</p>
-                                            <p><strong>Адрес загрузки:</strong> @Model.PickupAddress</p>
-                                            <p><strong>Адрес доставки:</strong> @Model.DeliveryAddress</p>
-                                            <p><strong>Вес:</strong> @FormatNumber(Model.Weight) кг</p>
-                                            <p><strong>Объем:</strong> @(Model.Volume > 0 ? FormatNumber(Model.Volume) + " м³" : "Не указан")</p>
+                                            <h6 class="card-title mb-3">
+                                                <i class="fas fa-info-circle me-2"></i>Информация о заказе
+                                            </h6>
+
+                                            <div class="row">
+                                                <div class="col-6 mb-2">
+                                                    <div class="text-muted small">№ Заказа</div>
+                                                    <div class="fw-medium">@Model.OrderNumber</div>
+                                                </div>
+                                                <div class="col-6 mb-2">
+                                                    <div class="text-muted small">Клиент</div>
+                                                    <div class="fw-medium">@Model.User?.FullName</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-12 mb-2">
+                                                    <div class="text-muted small">Телефон</div>
+                                                    <div class="fw-medium">@Model.User?.PhoneNumber</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-12 mb-2">
+                                                    <div class="text-muted small">Адрес загрузки</div>
+                                                    <div class="fw-medium">@Model.PickupAddress</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-12 mb-2">
+                                                    <div class="text-muted small">Адрес доставки</div>
+                                                    <div class="fw-medium">@Model.DeliveryAddress</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-6 mb-2">
+                                                    <div class="text-muted small">Вес</div>
+                                                    <div class="fw-medium">@FormatNumber(Model.Weight) кг</div>
+                                                </div>
+                                                <div class="col-6 mb-2">
+                                                    <div class="text-muted small">Объем</div>
+                                                    <div class="fw-medium">@(Model.Volume > 0 ? FormatNumber(Model.Volume) + " м³" : "Не указан")</div>
+                                                </div>
+                                            </div>
+
                                             @if (Model.CargoType != null && Model.CargoType.ToString() != "None" && Model.CargoType.ToString() != "0")
                                             {
-                                                <p><strong>Тип груза:</strong> @GetCargoTypeDisplayName(Model.CargoType)</p>
+                                                <div class="row">
+                                                    <div class="col-12 mb-2">
+                                                        <div class="text-muted small">Тип груза</div>
+                                                        <div class="fw-medium">@GetCargoTypeDisplayName(Model.CargoType)</div>
+                                                    </div>
+                                                </div>
                                             }
-                                            <p><strong>Тип транспорта:</strong> @GetVehicleTypeDisplayName(Model.VehicleType)</p>
-                                            <p><strong>Дата создания:</strong> @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+
+                                            <div class="row">
+                                                <div class="col-12 mb-2">
+                                                    <div class="text-muted small">Тип транспорта</div>
+                                                    <div class="fw-medium">@GetVehicleTypeDisplayName(Model.VehicleType)</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-12 mb-2">
+                                                    <div class="text-muted small">Дата создания</div>
+                                                    <div class="fw-medium">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</div>
+                                                </div>
+                                            </div>
+
                                             @if (Model.UpdatedAt.HasValue)
                                             {
-                                                <p><strong>Последнее обновление:</strong> @Model.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</p>
+                                                <div class="row">
+                                                    <div class="col-12">
+                                                        <div class="text-muted small">Последнее обновление</div>
+                                                        <div class="fw-medium">@Model.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</div>
+                                                    </div>
+                                                </div>
                                             }
                                         </div>
                                     </div>
@@ -138,20 +284,21 @@
                             }
                         </div>
 
-                        <div class="alert alert-warning mt-3">
+                        <div class="alert alert-warning mt-4">
                             <i class="fas fa-exclamation-triangle me-2"></i>
                             <strong>Внимание:</strong> @(isManagerOrAdmin ?
                                                         "Вы можете изменить статус, назначить водителя и цену заказа." :
                                                         "Вы можете редактировать только описание, даты и комментарии к заказу.")
                         </div>
 
-                        <div class="d-flex justify-content-between mt-4">
+                        <div class="d-flex justify-content-between mt-4 pt-3 border-top">
                             <a asp-action="@(isManagerOrAdmin ? "All" : "Index")" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>Назад
+                                <i class="fas fa-arrow-left me-2"></i>Назад к списку
                             </a>
-                            <div>
+                            <div class="d-flex gap-2">
+                                <!-- ИЗМЕНЕНО: убрана кнопка "Просмотр", оставлена только "Сохранить изменения" -->
                                 <button type="submit" class="btn btn-primary" id="saveButton">
-                                    <i class="fas fa-save me-2"></i>Сохранить
+                                    <i class="fas fa-save me-2"></i>Сохранить изменения
                                 </button>
                             </div>
                         </div>
@@ -174,35 +321,65 @@
                 $('.alert').fadeOut('slow');
             }, 5000);
 
-            // Функция для восстановления кнопки
-            function restoreButton() {
-                $('#saveButton').html('<i class="fas fa-save me-2"></i>Сохранить');
-                $('#saveButton').prop('disabled', false);
+            // Форматирование datetime-local полей
+            function formatDateTimeLocal(date) {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hours = String(date.getHours()).padStart(2, '0');
+                const minutes = String(date.getMinutes()).padStart(2, '0');
+
+                return `${year}-${month}-${day}T${hours}:${minutes}`;
+            }
+
+            // Установка текущего времени по умолчанию, если поля пустые
+            const pickupDateInput = document.getElementById('PickupDate');
+            const deliveryDateInput = document.getElementById('DeliveryDate');
+
+            if (pickupDateInput && !pickupDateInput.value) {
+                const now = new Date();
+                const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000); // +1 час
+                pickupDateInput.value = formatDateTimeLocal(oneHourLater);
+            }
+
+            if (deliveryDateInput && !deliveryDateInput.value) {
+                const pickupDate = pickupDateInput ? new Date(pickupDateInput.value) : new Date();
+                const twoHoursLater = new Date(pickupDate.getTime() + 2 * 60 * 60 * 1000); // +2 часа
+                deliveryDateInput.value = formatDateTimeLocal(twoHoursLater);
             }
 
             // Обработка отправки формы
             $('#editForm').submit(function(e) {
-                console.log('Форма отправляется...');
+                console.log('Отправка формы редактирования...');
 
                 // Проверка валидации
                 if (!$(this).valid()) {
                     console.log('Форма не прошла валидацию');
-                    // Восстанавливаем кнопку через 2 секунды если валидация не прошла
-                    setTimeout(restoreButton, 2000);
                     return true; // Позволяем показать ошибки валидации
+                }
+
+                // Проверка дат
+                const pickupDate = new Date($('#PickupDate').val());
+                const deliveryDate = new Date($('#DeliveryDate').val());
+
+                if (deliveryDate <= pickupDate) {
+                    alert('Ошибка: Дата доставки должна быть позже даты загрузки!');
+                    e.preventDefault();
+                    return false;
                 }
 
                 // Показываем индикатор загрузки
                 $('#saveButton').html('<i class="fas fa-spinner fa-spin me-2"></i>Сохранение...');
                 $('#saveButton').prop('disabled', true);
 
-                // Если форма прошла валидацию, она отправится
+                // Форма отправится автоматически после успешной валидации
                 return true;
             });
 
-            // Восстанавливаем кнопку если страница перезагружается
+            // Восстанавливаем кнопку если форма не отправляется
             $(window).on('beforeunload', function() {
-                restoreButton();
+                $('#saveButton').html('<i class="fas fa-save me-2"></i>Сохранить изменения');
+                $('#saveButton').prop('disabled', false);
             });
         });
     </script>

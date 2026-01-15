@@ -1,149 +1,199 @@
 ﻿@model Carzvo.Models.Shipment
+@using Carzvo.Models
 @{
     ViewData["Title"] = "Новый заказ";
 }
 
-<!-- ★ ДОБАВЬТЕ ЭТОТ БЛОК ДЛЯ ОШИБОК ★ -->
-@if (!ViewData.ModelState.IsValid)
-{
-    <div class="alert alert-danger">
-        <h5>Ошибки заполнения формы:</h5>
-        <ul>
-            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-            {
-                <li>@error.ErrorMessage</li>
-            }
-        </ul>
-    </div>
-}
+<style>
+    .form-card {
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+        .form-card .card-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 2px solid #dee2e6;
+        }
+
+    .required-field::after {
+        content: " *";
+        color: #dc3545;
+    }
+
+    .field-validation-error {
+        color: #dc3545;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+        display: none; /* Скрываем по умолчанию */
+    }
+
+    .input-validation-error {
+        border-color: #dc3545 !important;
+    }
+
+    .validation-summary-errors {
+        display: none; /* Скрываем сводку ошибок по умолчанию */
+    }
+</style>
 
 <div class="container mt-4">
+    <!-- УБРАНЫ ХЛЕБНЫЕ КРОШКИ - они уже есть в _Layout.cshtml -->
+
     <div class="row justify-content-center">
         <div class="col-md-10">
-            <div class="card">
+            <div class="card form-card">
                 <div class="card-header">
-                    <h4><i class="fas fa-plus-circle me-2"></i>@ViewData["Title"]</h4>
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>@ViewData["Title"]
+                    </h4>
                 </div>
                 <div class="card-body">
-                    <form asp-action="Create" method="post">
-                        @Html.AntiForgeryToken() <!-- ★ ДОБАВЬТЕ ЭТО ★ -->
+                    <!-- Скрываем общие ошибки - они будут показаны только после submit -->
+                    @if (!ViewData.ModelState.IsValid && Context.Request.Method == "POST")
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert" id="validationSummary">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-triangle fa-lg me-3"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-2">Пожалуйста, исправьте следующие ошибки:</h5>
+                                    <div asp-validation-summary="All" class="mb-0"></div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+                        </div>
+                    }
+
+                    <form asp-action="Create" method="post" id="createForm" novalidate>
+                        @Html.AntiForgeryToken()
 
                         <div class="row">
                             <!-- Левая колонка -->
                             <div class="col-md-6">
+                                <!-- Описание груза -->
                                 <div class="mb-3">
-                                    <label asp-for="Description" class="form-label">Описание груза *</label>
+                                    <label asp-for="Description" class="form-label required-field">Описание груза</label>
                                     <textarea asp-for="Description" class="form-control" rows="3"
-                                              placeholder="Опишите, что нужно перевезти" required></textarea>
-                                    <span asp-validation-for="Description" class="text-danger"></span>
+                                              placeholder="Опишите, что нужно перевезти"></textarea>
+                                    <span asp-validation-for="Description" class="field-validation-error">Пожалуйста, укажите описание груза</span>
                                 </div>
 
-                                <!-- ★ ДОБАВЛЕНО: CargoType ★ -->
+                                <!-- Тип груза -->
                                 <div class="mb-3">
-                                    <label asp-for="CargoType" class="form-label">Тип груза *</label>
-                                    <select asp-for="CargoType" class="form-select" required>
+                                    <label asp-for="CargoType" class="form-label required-field">Тип груза</label>
+                                    <select asp-for="CargoType" class="form-select">
                                         <option value="">Выберите тип груза</option>
-                                        @foreach (Carzvo.Models.CargoType type in Enum.GetValues(typeof(Carzvo.Models.CargoType)))
+                                        @foreach (CargoType type in Enum.GetValues(typeof(CargoType)))
                                         {
-                                            <option value="@type">@type</option>
+                                            <option value="@type">@GetCargoTypeDisplayName(type)</option>
                                         }
                                     </select>
-                                    <span asp-validation-for="CargoType" class="text-danger"></span>
+                                    <span asp-validation-for="CargoType" class="field-validation-error">Пожалуйста, выберите тип груза</span>
                                 </div>
 
+                                <!-- Тип транспорта -->
                                 <div class="mb-3">
-                                    <label asp-for="VehicleType" class="form-label">Тип транспорта *</label>
-                                    <select asp-for="VehicleType" class="form-select" required>
+                                    <label asp-for="VehicleType" class="form-label required-field">Тип транспорта</label>
+                                    <select asp-for="VehicleType" class="form-select">
                                         <option value="">Выберите тип транспорта</option>
-                                        @foreach (Carzvo.Models.VehicleType type in Enum.GetValues(typeof(Carzvo.Models.VehicleType)))
+                                        @foreach (VehicleType type in Enum.GetValues(typeof(VehicleType)))
                                         {
-                                            <option value="@type">@type</option>
+                                            <option value="@type">@GetVehicleTypeDisplayName(type)</option>
                                         }
                                     </select>
-                                    <span asp-validation-for="VehicleType" class="text-danger"></span>
+                                    <span asp-validation-for="VehicleType" class="field-validation-error">Пожалуйста, выберите тип транспорта</span>
                                 </div>
                             </div>
 
                             <!-- Правая колонка -->
                             <div class="col-md-6">
-                                <!-- ★ ДОБАВЛЕНО: Volume ★ -->
+                                <!-- Вес и объем -->
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label asp-for="Weight" class="form-label">Вес *</label>
+                                        <label asp-for="Weight" class="form-label required-field">Вес (кг)</label>
                                         <div class="input-group">
-                                            <input asp-for="Weight" class="form-control" type="number" step="0.1" min="0.1" required>
+                                            <input asp-for="Weight" class="form-control" type="number" step="0.1" min="0.1"
+                                                   placeholder="0.1">
                                             <span class="input-group-text">кг</span>
                                         </div>
-                                        <span asp-validation-for="Weight" class="text-danger"></span>
+                                        <span asp-validation-for="Weight" class="field-validation-error">Вес должен быть от 0.1 до 100000 кг</span>
                                     </div>
 
                                     <div class="col-md-6 mb-3">
-                                        <label asp-for="Volume" class="form-label">Объем *</label>
+                                        <label asp-for="Volume" class="form-label required-field">Объем (м³)</label>
                                         <div class="input-group">
-                                            <input asp-for="Volume" class="form-control" type="number" step="0.1" min="0.1" value="1.0" required>
+                                            <input asp-for="Volume" class="form-control" type="number" step="0.1" min="0.1"
+                                                   value="1.0" placeholder="1.0">
                                             <span class="input-group-text">м³</span>
                                         </div>
-                                        <span asp-validation-for="Volume" class="text-danger"></span>
+                                        <span asp-validation-for="Volume" class="field-validation-error">Объем должен быть от 0.1 до 1000 м³</span>
                                     </div>
                                 </div>
 
+                                <!-- Адрес загрузки -->
                                 <div class="mb-3">
-                                    <label asp-for="PickupAddress" class="form-label">Адрес загрузки *</label>
+                                    <label asp-for="PickupAddress" class="form-label required-field">Адрес загрузки</label>
                                     <input asp-for="PickupAddress" class="form-control"
-                                           placeholder="Откуда забрать груз" required>
-                                    <span asp-validation-for="PickupAddress" class="text-danger"></span>
+                                           placeholder="Введите адрес, откуда забрать груз">
+                                    <span asp-validation-for="PickupAddress" class="field-validation-error">Пожалуйста, укажите адрес загрузки</span>
                                 </div>
 
+                                <!-- Адрес доставки -->
                                 <div class="mb-3">
-                                    <label asp-for="DeliveryAddress" class="form-label">Адрес доставки *</label>
+                                    <label asp-for="DeliveryAddress" class="form-label required-field">Адрес доставки</label>
                                     <input asp-for="DeliveryAddress" class="form-control"
-                                           placeholder="Куда доставить груз" required>
-                                    <span asp-validation-for="DeliveryAddress" class="text-danger"></span>
+                                           placeholder="Введите адрес, куда доставить груз">
+                                    <span asp-validation-for="DeliveryAddress" class="field-validation-error">Пожалуйста, укажите адрес доставки</span>
                                 </div>
 
+                                <!-- Даты загрузки и доставки -->
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
-                                        <label asp-for="PickupDate" class="form-label">Дата загрузки *</label>
-                                        <input asp-for="PickupDate" class="form-control" type="datetime-local" required>
-                                        <span asp-validation-for="PickupDate" class="text-danger"></span>
+                                        <label asp-for="PickupDate" class="form-label required-field">Дата загрузки</label>
+                                        <input asp-for="PickupDate" class="form-control" type="datetime-local">
+                                        <span asp-validation-for="PickupDate" class="field-validation-error">Пожалуйста, укажите дату загрузки</span>
                                     </div>
 
                                     <div class="col-md-6 mb-3">
-                                        <label asp-for="DeliveryDate" class="form-label">Дата доставки *</label>
-                                        <input asp-for="DeliveryDate" class="form-control" type="datetime-local" required>
-                                        <span asp-validation-for="DeliveryDate" class="text-danger"></span>
+                                        <label asp-for="DeliveryDate" class="form-label required-field">Дата доставки</label>
+                                        <input asp-for="DeliveryDate" class="form-control" type="datetime-local">
+                                        <span asp-validation-for="DeliveryDate" class="field-validation-error">Пожалуйста, укажите дату доставки</span>
                                     </div>
                                 </div>
 
+                                <!-- Примечания -->
                                 <div class="mb-3">
                                     <label asp-for="Notes" class="form-label">Примечания</label>
                                     <textarea asp-for="Notes" class="form-control" rows="2"
                                               placeholder="Особые требования, комментарии..."></textarea>
-                                    <span asp-validation-for="Notes" class="text-danger"></span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- ★ ДОБАВЬТЕ СКРЫТОЕ ПОЛЕ ДЛЯ OrderNumber ★ -->
+                        <!-- Скрытое поле для номера заказа -->
                         <input type="hidden" asp-for="OrderNumber" value="@("ORD-" + DateTime.Now.ToString("yyyyMMddHHmmss"))" />
 
+                        <!-- Информационный блок -->
                         <div class="alert alert-info mt-4">
-                            <h5><i class="fas fa-calculator me-2"></i>Расчет стоимости</h5>
-                            <p>Стоимость будет рассчитана автоматически на основе:</p>
-                            <ul>
+                            <h5 class="alert-heading">
+                                <i class="fas fa-calculator me-2"></i>Расчет стоимости
+                            </h5>
+                            <p class="mb-2">Стоимость будет рассчитана автоматически на основе следующих параметров:</p>
+                            <ul class="mb-2">
                                 <li>Типа транспорта</li>
                                 <li>Типа и веса груза</li>
-                                <li>Объема</li>
+                                <li>Объема груза</li>
                                 <li>Срочности доставки</li>
                             </ul>
-                            <p class="mb-0"><small>* - обязательные для заполнения поля</small></p>
+                            <p class="mb-0"><small>Поля, отмеченные <span class="text-danger">*</span>, обязательны для заполнения</small></p>
                         </div>
 
-                        <div class="d-flex justify-content-between mt-4">
+                        <!-- Кнопки -->
+                        <div class="d-flex justify-content-between mt-4 pt-3 border-top">
                             <a asp-action="Index" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>Назад к списку
+                                <i class="fas fa-arrow-left me-2"></i>Назад к списку заказов
                             </a>
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary" id="submitButton">
                                 <i class="fas fa-check me-2"></i>Создать заказ
                             </button>
                         </div>
@@ -155,41 +205,274 @@
 </div>
 
 @section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-
     <script>
-        // Автоматическая установка дат
         $(document).ready(function() {
-            var now = new Date();
-            var tomorrow = new Date(now);
+            // 1. Устанавливаем минимальную дату - сегодня
+            var today = new Date();
+            var tomorrow = new Date(today);
             tomorrow.setDate(tomorrow.getDate() + 1);
             var dayAfterTomorrow = new Date(tomorrow);
             dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
 
             // Форматирование для datetime-local
             function formatDateTime(date) {
-                return date.toISOString().slice(0, 16);
+                var year = date.getFullYear();
+                var month = ('0' + (date.getMonth() + 1)).slice(-2);
+                var day = ('0' + date.getDate()).slice(-2);
+                var hours = ('0' + date.getHours()).slice(-2);
+                var minutes = ('0' + date.getMinutes()).slice(-2);
+
+                return year + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
             }
 
-            // Установка значений по умолчанию
+            // Установка значений по умолчанию для дат
             $('#PickupDate').val(formatDateTime(tomorrow));
             $('#DeliveryDate').val(formatDateTime(dayAfterTomorrow));
 
-            // Установка дефолтного Volume
-            $('#Volume').val('1.0');
-
-            // Валидация дат
+            // 2. Валидация дат - доставка должна быть позже загрузки
             $('#PickupDate, #DeliveryDate').change(function() {
                 var pickup = new Date($('#PickupDate').val());
                 var delivery = new Date($('#DeliveryDate').val());
 
                 if (delivery <= pickup) {
-                    alert('Дата доставки должна быть позже даты загрузки!');
-                    $('#DeliveryDate').val(formatDateTime(new Date(pickup.getTime() + 24 * 60 * 60 * 1000)));
+                    alert('Ошибка: Дата доставки должна быть позже даты загрузки!');
+                    // Автоматически устанавливаем дату доставки на 1 день позже
+                    var newDeliveryDate = new Date(pickup);
+                    newDeliveryDate.setDate(newDeliveryDate.getDate() + 1);
+                    $('#DeliveryDate').val(formatDateTime(newDeliveryDate));
                 }
+            });
+
+            // 3. Кастомная валидация формы при отправке
+            $('#createForm').on('submit', function(e) {
+                e.preventDefault();
+
+                // Скрываем все предыдущие ошибки
+                $('.field-validation-error').hide();
+                $('.input-validation-error').removeClass('input-validation-error');
+                $('#validationSummary').hide();
+
+                var isValid = true;
+                var firstErrorField = null;
+
+                // Проверка обязательных полей
+                $('[required]').each(function() {
+                    var $field = $(this);
+                    var $errorSpan = $field.siblings('.field-validation-error').first();
+
+                    if (!$field.val().trim()) {
+                        isValid = false;
+                        $field.addClass('input-validation-error');
+                        $errorSpan.show();
+
+                        if (!firstErrorField) {
+                            firstErrorField = $field;
+                        }
+                    }
+                });
+
+                // Проверка выпадающих списков
+                $('select[required]').each(function() {
+                    var $select = $(this);
+                    var $errorSpan = $select.siblings('.field-validation-error').first();
+
+                    if (!$select.val()) {
+                        isValid = false;
+                        $select.addClass('input-validation-error');
+                        $errorSpan.show();
+
+                        if (!firstErrorField) {
+                            firstErrorField = $select;
+                        }
+                    }
+                });
+
+                // Проверка веса
+                var weight = parseFloat($('#Weight').val());
+                var $weightError = $('#Weight').siblings('.field-validation-error').first();
+                if (isNaN(weight) || weight < 0.1 || weight > 100000) {
+                    isValid = false;
+                    $('#Weight').addClass('input-validation-error');
+                    $weightError.show();
+                    if (!firstErrorField) firstErrorField = $('#Weight');
+                }
+
+                // Проверка объема
+                var volume = parseFloat($('#Volume').val());
+                var $volumeError = $('#Volume').siblings('.field-validation-error').first();
+                if (isNaN(volume) || volume < 0.1 || volume > 1000) {
+                    isValid = false;
+                    $('#Volume').addClass('input-validation-error');
+                    $volumeError.show();
+                    if (!firstErrorField) firstErrorField = $('#Volume');
+                }
+
+                // Проверка дат
+                var pickupDate = $('#PickupDate').val();
+                var deliveryDate = $('#DeliveryDate').val();
+
+                if (!pickupDate) {
+                    isValid = false;
+                    $('#PickupDate').addClass('input-validation-error');
+                    $('#PickupDate').siblings('.field-validation-error').first().show();
+                    if (!firstErrorField) firstErrorField = $('#PickupDate');
+                }
+
+                if (!deliveryDate) {
+                    isValid = false;
+                    $('#DeliveryDate').addClass('input-validation-error');
+                    $('#DeliveryDate').siblings('.field-validation-error').first().show();
+                    if (!firstErrorField) firstErrorField = $('#DeliveryDate');
+                }
+
+                // Если есть ошибки
+                if (!isValid) {
+                    // Показываем сводку ошибок
+                    $('#validationSummary').show();
+
+                    // Скроллим к первой ошибке
+                    if (firstErrorField) {
+                        $('html, body').animate({
+                            scrollTop: firstErrorField.offset().top - 100
+                        }, 500);
+                        firstErrorField.focus();
+                    }
+
+                    return false;
+                }
+
+                // Если все ок - отправляем форму
+                $(this).off('submit'); // Убираем обработчик, чтобы форма отправилась
+                $(this).submit();
+            });
+
+            // 4. Убираем ошибки при вводе данных
+            $('input, textarea, select').on('input change', function() {
+                var $field = $(this);
+                $field.removeClass('input-validation-error');
+                $field.siblings('.field-validation-error').first().hide();
             });
         });
     </script>
+}
+
+@functions {
+    string GetCargoTypeDisplayName(CargoType cargoType)
+    {
+        if (cargoType.ToString() == "0" || cargoType.ToString() == "None")
+            return "Не указан";
+
+        var name = cargoType.ToString().ToLower();
+        if (string.IsNullOrEmpty(name))
+            return "Не указан";
+
+        return name switch
+        {
+            "general" => "Обычный груз",
+            "standard" => "Стандартный",
+            "fragile" => "Хрупкий",
+            "perishable" => "Скоропортящийся",
+            "dangerous" => "Опасный груз",
+            "hazardous" => "Опасный",
+            "oversized" => "Крупногабаритный",
+            "oversize" => "Крупногабаритный",
+            "large" => "Крупногабаритный",
+            "liquid" => "Жидкость",
+            "temperaturecontrolled" => "Температурный контроль",
+            "refrigerated" => "Охлаждаемый",
+            "container" => "Контейнерный",
+            "bulk" => "Насыпной",
+            "package" => "Упакованный",
+            "pallets" => "Паллеты",
+            "machinery" => "Оборудование",
+            "equipment" => "Оборудование",
+            "appliances" => "Бытовая техника",
+            "electronics" => "Электроника",
+            "documents" => "Документы",
+            "food" => "Продукты питания",
+            "clothing" => "Одежда",
+            "furniture" => "Мебель",
+            "construction" => "Строительные материалы",
+            "medical" => "Медицинские товары",
+            "chemical" => "Химикаты",
+            "chemicals" => "Химикаты",
+            "automotive" => "Автозапчасти",
+            "textile" => "Текстиль",
+            "cosmetics" => "Косметика",
+            "books" => "Книги",
+            "toys" => "Игрушки",
+            "sport" => "Спортивный инвентарь",
+            "music" => "Музыкальное оборудование",
+            "art" => "Произведения искусства",
+            "jewelry" => "Ювелирные изделия",
+            "plants" => "Растения",
+            "animals" => "Животные",
+            "small" => "Малый груз",
+            "medium" => "Средний груз",
+            "other" => "Другой",
+            _ => cargoType.ToString()
+        };
+    }
+
+    string GetVehicleTypeDisplayName(VehicleType vehicleType)
+    {
+        if (vehicleType.ToString() == "0" || vehicleType.ToString() == "None")
+            return "Не указан";
+
+        var name = vehicleType.ToString().ToLower();
+        if (string.IsNullOrEmpty(name))
+            return "Не указан";
+
+        return name switch
+        {
+            "truck" => "Грузовик",
+            "van" => "Фургон",
+            "refrigerator" => "Рефрижератор",
+            "refrigerated" => "Рефрижератор",
+            "tanker" => "Цистерна",
+            "container" => "Контейнеровоз",
+            "car" => "Легковой автомобиль",
+            "minivan" => "Минивэн",
+            "pickup" => "Пикап",
+            "trailer" => "Прицеп",
+            "flatbed" => "Платформа",
+            "semi" => "Фура",
+            "boxtruck" => "Бортовой грузовик",
+            "towing" => "Эвакуатор",
+            "motorcycle" => "Мотоцикл",
+            "bicycle" => "Велосипед",
+            "bus" => "Автобус",
+            "suv" => "Внедорожник",
+            "courier" => "Курьерский транспорт",
+            "any" => "Любой",
+            "other" => "Другой",
+            "sedan" => "Седан",
+            "hatchback" => "Хэтчбек",
+            "wagon" => "Универсал",
+            "coupe" => "Купе",
+            "convertible" => "Кабриолет",
+            "crossover" => "Кроссовер",
+            "limousine" => "Лимузин",
+            "tractor" => "Трактор",
+            "excavator" => "Экскаватор",
+            "crane" => "Кран",
+            "forklift" => "Погрузчик",
+            "smalltruck" => "Маленький грузовик",
+            "mediumtruck" => "Средний грузовик",
+            "largetruck" => "Большой грузовик",
+            "small" => "Маленький",
+            "medium" => "Средний",
+            "large" => "Большой",
+            "lighttruck" => "Легкий грузовик",
+            "heavytruck" => "Тяжелый грузовик",
+            "deliveryvan" => "Доставной фургон",
+            "cargovan" => "Грузовой фургон",
+            "paneltruck" => "Фургон-панель",
+            "dumptruck" => "Самосвал",
+            "cementtruck" => "Цементовоз",
+            "logistics" => "Логистический",
+            "transport" => "Транспорт",
+            _ => vehicleType.ToString()
+        };
+    }
 }

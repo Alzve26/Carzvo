@@ -1,0 +1,356 @@
+﻿@model Carzvo.Models.ViewModels.RegisterViewModel
+@{
+    ViewData["Title"] = "Регистрация";
+}
+
+<style>
+    .register-card {
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border: none;
+        overflow: hidden;
+    }
+
+    .register-header {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        color: white;
+        padding: 2rem;
+    }
+
+    .register-body {
+        padding: 2.5rem;
+    }
+
+    .form-control {
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        border: 1px solid #e1e5e9;
+        transition: all 0.3s;
+    }
+
+        .form-control:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 0.2rem rgba(79, 172, 254, 0.25);
+        }
+
+    .btn-register {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        border: none;
+        color: white;
+        padding: 0.75rem;
+        border-radius: 10px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+        .btn-register:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(79, 172, 254, 0.25);
+        }
+
+    .password-strength {
+        height: 5px;
+        border-radius: 2px;
+        margin-top: 5px;
+        transition: all 0.3s;
+    }
+
+    .strength-weak {
+        background-color: #dc3545;
+        width: 25%;
+    }
+
+    .strength-fair {
+        background-color: #ffc107;
+        width: 50%;
+    }
+
+    .strength-good {
+        background-color: #28a745;
+        width: 75%;
+    }
+
+    .strength-strong {
+        background-color: #17a2b8;
+        width: 100%;
+    }
+
+    .form-check-input:checked {
+        background-color: #4facfe;
+        border-color: #4facfe;
+    }
+</style>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+            <div class="card register-card">
+                <div class="register-header text-center">
+                    <h2 class="mb-3">
+                        <i class="fas fa-user-plus me-2"></i>@ViewData["Title"]
+                    </h2>
+                    <p class="mb-0 opacity-75">Создайте новый аккаунт для доступа к системе</p>
+                </div>
+
+                <div class="register-body">
+                    <!-- Ошибки валидации -->
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-triangle fa-lg me-3"></i>
+                                <div>
+                                    <h5 class="alert-heading mb-2">Ошибки при регистрации:</h5>
+                                    <div asp-validation-summary="All" class="mb-0"></div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+                        </div>
+                    }
+
+                    <form asp-action="Register" method="post" id="registerForm">
+                        @Html.AntiForgeryToken()
+
+                        <div class="row">
+                            <!-- Левая колонка -->
+                            <div class="col-md-6">
+                                <!-- Полное имя -->
+                                <div class="mb-3">
+                                    <label asp-for="FullName" class="form-label fw-bold">
+                                        <i class="fas fa-user me-1"></i>Полное имя
+                                    </label>
+                                    <input asp-for="FullName" class="form-control"
+                                           placeholder="Иван Иванов" required>
+                                    <span asp-validation-for="FullName" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Email -->
+                                <div class="mb-3">
+                                    <label asp-for="Email" class="form-label fw-bold">
+                                        <i class="fas fa-envelope me-1"></i>Email
+                                    </label>
+                                    <input asp-for="Email" class="form-control"
+                                           type="email" placeholder="ivan@example.com" required>
+                                    <span asp-validation-for="Email" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Телефон -->
+                                <div class="mb-3">
+                                    <label asp-for="PhoneNumber" class="form-label fw-bold">
+                                        <i class="fas fa-phone me-1"></i>Телефон
+                                    </label>
+                                    <input asp-for="PhoneNumber" class="form-control"
+                                           placeholder="+7 (999) 123-45-67" required>
+                                    <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                                </div>
+                            </div>
+
+                            <!-- Правая колонка -->
+                            <div class="col-md-6">
+                                <!-- Пароль -->
+                                <div class="mb-3">
+                                    <label asp-for="Password" class="form-label fw-bold">
+                                        <i class="fas fa-lock me-1"></i>Пароль
+                                    </label>
+                                    <div class="input-group">
+                                        <input asp-for="Password" class="form-control"
+                                               type="password" placeholder="Минимум 6 символов"
+                                               id="password" required>
+                                        <button class="btn btn-outline-secondary" type="button"
+                                                id="togglePassword">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <div class="password-strength" id="passwordStrength"></div>
+                                    <span asp-validation-for="Password" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Подтверждение пароля -->
+                                <div class="mb-3">
+                                    <label asp-for="ConfirmPassword" class="form-label fw-bold">
+                                        <i class="fas fa-lock me-1"></i>Подтверждение пароля
+                                    </label>
+                                    <div class="input-group">
+                                        <input asp-for="ConfirmPassword" class="form-control"
+                                               type="password" placeholder="Повторите пароль" required>
+                                        <button class="btn btn-outline-secondary" type="button"
+                                                id="toggleConfirmPassword">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                    <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                                </div>
+
+                                <!-- Компания -->
+                                <div class="mb-3">
+                                    <label asp-for="CompanyName" class="form-label fw-bold">
+                                        <i class="fas fa-building me-1"></i>Название компании (необязательно)
+                                    </label>
+                                    <input asp-for="CompanyName" class="form-control"
+                                           placeholder="ООО 'Рога и копыта'">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Адрес -->
+                        <div class="mb-4">
+                            <label asp-for="Address" class="form-label fw-bold">
+                                <i class="fas fa-map-marker-alt me-1"></i>Адрес (необязательно)
+                            </label>
+                            <input asp-for="Address" class="form-control"
+                                   placeholder="г. Москва, ул. Примерная, д. 1">
+                        </div>
+
+                        <!-- Соглашение -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       id="termsCheck" required>
+                                <label class="form-check-label" for="termsCheck">
+                                    Я согласен с <a href="#" class="text-decoration-none">условиями использования</a>
+                                    и <a href="#" class="text-decoration-none">политикой конфиденциальности</a>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Кнопка регистрации -->
+                        <div class="d-grid mb-4">
+                            <button type="submit" class="btn btn-register btn-lg">
+                                <i class="fas fa-user-plus me-2"></i>Зарегистрироваться
+                            </button>
+                        </div>
+
+                        <!-- Ссылка на вход -->
+                        <div class="text-center">
+                            <p class="mb-0">
+                                Уже есть аккаунт?
+                                <a asp-action="Login" class="text-decoration-none fw-bold">
+                                    <i class="fas fa-sign-in-alt me-1"></i>Войти
+                                </a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Преимущества -->
+            <div class="row mt-4 text-center">
+                <div class="col-md-4 mb-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <i class="fas fa-shipping-fast fa-2x text-primary mb-3"></i>
+                            <h5>Быстрая доставка</h5>
+                            <p class="text-muted small">Отправляйте грузы быстро и безопасно</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <i class="fas fa-shield-alt fa-2x text-success mb-3"></i>
+                            <h5>Безопасность</h5>
+                            <p class="text-muted small">Ваши данные защищены</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <i class="fas fa-headset fa-2x text-info mb-3"></i>
+                            <h5>Поддержка 24/7</h5>
+                            <p class="text-muted small">Мы всегда готовы помочь</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Показать/скрыть пароль
+            $('#togglePassword').click(function() {
+                const passwordInput = $('#password');
+                const icon = $(this).find('i');
+
+                if (passwordInput.attr('type') === 'password') {
+                    passwordInput.attr('type', 'text');
+                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
+                } else {
+                    passwordInput.attr('type', 'password');
+                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
+                }
+            });
+
+            // Показать/скрыть подтверждение пароля
+            $('#toggleConfirmPassword').click(function() {
+                const confirmInput = $('#ConfirmPassword');
+                const icon = $(this).find('i');
+
+                if (confirmInput.attr('type') === 'password') {
+                    confirmInput.attr('type', 'text');
+                    icon.removeClass('fa-eye').addClass('fa-eye-slash');
+                } else {
+                    confirmInput.attr('type', 'password');
+                    icon.removeClass('fa-eye-slash').addClass('fa-eye');
+                }
+            });
+
+            // Проверка сложности пароля
+            $('#password').on('input', function() {
+                const password = $(this).val();
+                const strengthBar = $('#passwordStrength');
+
+                let strength = 0;
+
+                if (password.length >= 6) strength++;
+                if (password.length >= 8) strength++;
+                if (/[A-Z]/.test(password)) strength++;
+                if (/[0-9]/.test(password)) strength++;
+                if (/[^A-Za-z0-9]/.test(password)) strength++;
+
+                // Очищаем классы
+                strengthBar.removeClass('strength-weak strength-fair strength-good strength-strong');
+
+                // Добавляем соответствующий класс
+                if (password.length === 0) {
+                    strengthBar.css('width', '0%');
+                } else if (strength <= 1) {
+                    strengthBar.addClass('strength-weak');
+                } else if (strength <= 2) {
+                    strengthBar.addClass('strength-fair');
+                } else if (strength <= 3) {
+                    strengthBar.addClass('strength-good');
+                } else {
+                    strengthBar.addClass('strength-strong');
+                }
+            });
+
+            // Валидация формы
+            $('#registerForm').on('submit', function(e) {
+                if (!$('#termsCheck').prop('checked')) {
+                    e.preventDefault();
+                    alert('Пожалуйста, согласитесь с условиями использования');
+                    return false;
+                }
+
+                // Проверка совпадения паролей
+                const password = $('#password').val();
+                const confirmPassword = $('#ConfirmPassword').val();
+
+                if (password !== confirmPassword) {
+                    e.preventDefault();
+                    alert('Пароли не совпадают');
+                    return false;
+                }
+
+                return true;
+            });
+
+            // Автофокус на первое поле
+            $('#FullName').focus();
+        });
+    </script>
+}

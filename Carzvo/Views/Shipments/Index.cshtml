@@ -1,580 +1,253 @@
-﻿@model List<Carzvo.Models.Shipment>
+﻿@model IEnumerable<Carzvo.Models.Shipment>
 @using Carzvo.Models
-
 @{
     ViewData["Title"] = "Мои заказы";
-    var isManagerOrAdmin = User.IsInRole("Manager") || User.IsInRole("Admin");
 }
 
 <style>
-    .order-card {
-        border-radius: 12px;
-        border: 1px solid #e0e0e0;
-        transition: all 0.3s ease;
-        margin-bottom: 20px;
-        overflow: hidden;
+    /* Стили для кнопок действий */
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+        align-items: center;
     }
 
-        .order-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-            border-color: #0d6efd;
+    .action-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+        .action-btn i {
+            font-size: 14px;
+            color: white;
         }
 
-    .order-header {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        padding: 15px 20px;
-        border-bottom: 2px solid #dee2e6;
+    /* Кнопка просмотра - синяя */
+    .btn-view {
+        background-color: #3498db;
     }
 
-    .order-body {
-        padding: 20px;
+        .btn-view:hover {
+            background-color: #2980b9;
+            transform: translateY(-1px);
+        }
+
+    /* Кнопка редактирования - оранжевая */
+    .btn-edit {
+        background-color: #e67e22;
     }
 
-    .status-badge {
-        padding: 8px 16px;
-        border-radius: 20px;
+        .btn-edit:hover {
+            background-color: #d35400;
+            transform: translateY(-1px);
+        }
+
+    /* Кнопка удаления - красная */
+    .btn-delete {
+        background-color: #e74c3c;
+    }
+
+        .btn-delete:hover {
+            background-color: #c0392b;
+            transform: translateY(-1px);
+        }
+
+    /* Тултип при наведении */
+    .action-btn[data-tooltip] {
+        position: relative;
+    }
+
+        .action-btn[data-tooltip]::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 1000;
+            pointer-events: none;
+        }
+
+        .action-btn[data-tooltip]::after {
+            content: '';
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-bottom-color: rgba(0, 0, 0, 0.9);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 1001;
+            pointer-events: none;
+        }
+
+        .action-btn[data-tooltip]:hover::before,
+        .action-btn[data-tooltip]:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+
+    /* Стили для таблицы */
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    .table th {
+        border-top: none;
         font-weight: 600;
-        font-size: 0.85rem;
+        color: #495057;
+        font-size: 0.9rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
 
-    .badge-pending {
-        background-color: #fff3cd;
-        color: #856404;
-        border: 1px solid #ffeaa7;
-    }
-
-    .badge-processing {
-        background-color: #d1ecf1;
-        color: #0c5460;
-        border: 1px solid #bee5eb;
-    }
-
-    .badge-assigned {
-        background-color: #d1e7ff;
-        color: #004085;
-        border: 1px solid #b8daff;
-    }
-
-    .badge-inTransit {
-        background-color: #e2d9f3;
-        color: #4a3c6d;
-        border: 1px solid #d6c6f0;
-    }
-
-    .badge-delivered {
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
-    }
-
-    .badge-cancelled {
-        background-color: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
-    }
-
-    .info-row {
-        margin-bottom: 12px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #f0f0f0;
-    }
-
-        .info-row:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-
-    .info-label {
+    /* Стили для бейджей статусов */
+    .badge {
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
         font-weight: 600;
-        color: #6c757d;
-        font-size: 0.9rem;
-        margin-bottom: 3px;
-    }
-
-    .info-value {
-        font-weight: 500;
-        color: #212529;
-        font-size: 1rem;
-    }
-
-    .price-badge {
-        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-        color: white;
-        padding: 10px 20px;
-        border-radius: 10px;
-        font-weight: 700;
-        font-size: 1.2rem;
-        display: inline-block;
-    }
-
-    .actions-container {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-    }
-
-    .btn-action {
-        min-width: 100px;
-        padding: 8px 15px;
-        border-radius: 8px;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-    }
-
-        .btn-action i {
-            font-size: 0.9rem;
-        }
-
-    .empty-state {
-        text-align: center;
-        padding: 60px 20px;
-        background: #f8f9fa;
-        border-radius: 12px;
-        border: 2px dashed #dee2e6;
-    }
-
-        .empty-state i {
-            font-size: 4rem;
-            color: #adb5bd;
-            margin-bottom: 20px;
-        }
-
-    .stats-card {
-        background: white;
-        border-radius: 10px;
-        padding: 20px;
-        text-align: center;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-        border: 1px solid #e0e0e0;
-        transition: transform 0.3s ease;
-    }
-
-        .stats-card:hover {
-            transform: translateY(-5px);
-        }
-
-    .stats-number {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 10px;
-    }
-
-    .stats-label {
-        color: #6c757d;
-        font-size: 0.9rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .order-number {
-        font-family: 'Courier New', monospace;
-        font-weight: 700;
-        color: #0d6efd;
-        font-size: 1.1rem;
-    }
-
-    .client-info {
-        background: #f8f9fa;
-        padding: 10px 15px;
-        border-radius: 8px;
-        border-left: 4px solid #0d6efd;
-    }
-
-    .cargo-badge {
-        background-color: #e8f4ff;
-        color: #0d6efd;
-        border: 1px solid #cce5ff;
-    }
-
-    .param-badge {
-        background-color: #f8f9fa;
-        color: #495057;
-        border: 1px solid #dee2e6;
-        padding: 5px 10px;
-        border-radius: 6px;
-        font-size: 0.85rem;
     }
 </style>
 
-<div class="container mt-4">
-    <!-- Заголовок и кнопка создания -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h1 class="mb-2">
-                <i class="fas fa-boxes text-primary me-2"></i>
-                @ViewData["Title"]
-            </h1>
-            <p class="text-muted mb-0">
-                <i class="fas fa-info-circle me-1"></i>
-                Здесь вы можете управлять всеми своими заказами
-            </p>
-        </div>
-
-        <div class="d-flex gap-2">
-            @if (!isManagerOrAdmin)
-            {
-                <a asp-action="Create" class="btn btn-primary btn-lg">
-                    <i class="fas fa-plus-circle me-2"></i>
-                    Новый заказ
-                </a>
-            }
-            else
-            {
-                <a asp-action="All" class="btn btn-info btn-lg">
-                    <i class="fas fa-list-alt me-2"></i>
-                    Все заказы
-                </a>
-            }
-        </div>
-    </div>
-
-    <!-- Уведомления -->
-    @if (TempData["SuccessMessage"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-check-circle fa-lg me-3"></i>
-                <div>
-                    <h5 class="alert-heading mb-1">Успешно!</h5>
-                    <p class="mb-0">@TempData["SuccessMessage"]</p>
-                </div>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    @if (TempData["ErrorMessage"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-            <div class="d-flex align-items-center">
-                <i class="fas fa-exclamation-circle fa-lg me-3"></i>
-                <div>
-                    <h5 class="alert-heading mb-1">Ошибка!</h5>
-                    <p class="mb-0">@TempData["ErrorMessage"]</p>
-                </div>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    <!-- Статистика -->
-    @if (Model != null && Model.Any())
-    {
-        <div class="row mb-4">
-            <div class="col-md-3 col-6 mb-3">
-                <div class="stats-card border-primary">
-                    <div class="stats-number text-primary">@Model.Count()</div>
-                    <div class="stats-label">Всего заказов</div>
-                </div>
-            </div>
-            <div class="col-md-3 col-6 mb-3">
-                <div class="stats-card border-warning">
-                    @{
-                        var activeCount = Model.Count(s => s.Status == ShipmentStatus.Pending ||
-                        s.Status == ShipmentStatus.Processing ||
-                        s.Status == ShipmentStatus.Assigned ||
-                        s.Status == ShipmentStatus.InTransit);
-                    }
-                    <div class="stats-number text-warning">@activeCount</div>
-                    <div class="stats-label">Активные</div>
-                </div>
-            </div>
-            <div class="col-md-3 col-6 mb-3">
-                <div class="stats-card border-success">
-                    @{
-                        var deliveredCount = Model.Count(s => s.Status == ShipmentStatus.Delivered);
-                    }
-                    <div class="stats-number text-success">@deliveredCount</div>
-                    <div class="stats-label">Доставлено</div>
-                </div>
-            </div>
-            <div class="col-md-3 col-6 mb-3">
-                <div class="stats-card border-danger">
-                    @{
-                        var cancelledCount = Model.Count(s => s.Status == ShipmentStatus.Cancelled);
-                    }
-                    <div class="stats-number text-danger">@cancelledCount</div>
-                    <div class="stats-label">Отменено</div>
-                </div>
-            </div>
-        </div>
-    }
-
-    <!-- Список заказов -->
-    @if (Model == null || !Model.Any())
-    {
-        <div class="empty-state">
-            <i class="fas fa-inbox"></i>
-            <h3 class="mb-3">Заказы не найдены</h3>
-            <p class="text-muted mb-4">У вас пока нет созданных заказов. Создайте свой первый заказ прямо сейчас!</p>
-            @if (!isManagerOrAdmin)
-            {
-                <a asp-action="Create" class="btn btn-primary btn-lg">
-                    <i class="fas fa-plus me-2"></i>
-                    Создать первый заказ
-                </a>
-            }
-        </div>
-    }
-    else
-    {
-        foreach (var shipment in Model)
-        {
-            <div class="order-card">
-                <div class="order-header d-flex justify-content-between align-items-center">
-                    <div>
-                        <span class="order-number">Заказ №@shipment.OrderNumber</span>
-                        <span class="ms-3 text-muted">
-                            <i class="far fa-calendar-alt me-1"></i>
-                            @shipment.CreatedAt.ToString("dd.MM.yyyy")
-                        </span>
-                    </div>
-                    <div>
-                        <span class="status-badge @GetStatusBadgeClass(shipment.Status)">
-                            @GetStatusDisplayName(shipment.Status)
-                        </span>
-                    </div>
-                </div>
-
-                <div class="order-body">
-                    <div class="row">
-                        <!-- Основная информация -->
-                        <div class="col-md-6">
-                            <div class="info-row">
-                                <div class="info-label">Описание груза</div>
-                                <div class="info-value">
-                                    <i class="fas fa-box me-2 text-muted"></i>
-                                    @shipment.Description
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-6">
-                                    <div class="info-row">
-                                        <div class="info-label">Дата загрузки</div>
-                                        <div class="info-value">
-                                            <i class="far fa-calendar me-2 text-muted"></i>
-                                            @shipment.PickupDate.ToString("dd.MM.yyyy HH:mm")
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="info-row">
-                                        <div class="info-label">Дата доставки</div>
-                                        <div class="info-value">
-                                            <i class="far fa-calendar-check me-2 text-muted"></i>
-                                            @shipment.DeliveryDate.ToString("dd.MM.yyyy HH:mm")
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="info-row">
-                                <div class="info-label">Маршрут</div>
-                                <div class="info-value">
-                                    <div class="mb-1">
-                                        <i class="fas fa-map-marker-alt text-success me-2"></i>
-                                        @shipment.PickupAddress
-                                    </div>
-                                    <div>
-                                        <i class="fas fa-arrow-right text-muted me-2"></i>
-                                        <i class="fas fa-map-marker-alt text-danger me-2"></i>
-                                        @shipment.DeliveryAddress
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Дополнительная информация -->
-                        <div class="col-md-6">
-                            @if (isManagerOrAdmin)
-                            {
-                                <div class="client-info mb-3">
-                                    <div class="info-label">Клиент</div>
-                                    <div class="info-value">
-                                        <i class="fas fa-user me-2"></i>
-                                        @shipment.User?.FullName
-                                    </div>
-                                    <div class="text-muted small">
-                                        <i class="fas fa-phone me-2"></i>
-                                        @shipment.User?.PhoneNumber
-                                    </div>
-                                </div>
-                            }
-
-                            <div class="info-row">
-                                <div class="info-label">Параметры груза</div>
-                                <div class="info-value d-flex flex-wrap gap-2">
-                                    <span class="param-badge">
-                                        <i class="fas fa-weight-hanging me-1"></i>
-                                        @FormatNumber(shipment.Weight) кг
-                                    </span>
-
-                                    @if (shipment.Volume > 0)
-                                    {
-                                        <span class="param-badge">
-                                            <i class="fas fa-cube me-1"></i>
-                                            @FormatNumber(shipment.Volume) м³
-                                        </span>
-                                    }
-
-                                    @if (shipment.CargoType != null && shipment.CargoType.ToString() != "None" && shipment.CargoType.ToString() != "0")
-                                    {
-                                        <span class="param-badge cargo-badge">
-                                            <i class="fas fa-tag me-1"></i>
-                                            @GetCargoTypeDisplayName(shipment.CargoType)
-                                        </span>
-                                    }
-
-                                    <span class="param-badge">
-                                        <i class="fas fa-truck me-1"></i>
-                                        @GetVehicleTypeDisplayName(shipment.VehicleType)
-                                    </span>
-                                </div>
-                            </div>
-
-                            @if (isManagerOrAdmin)
-                            {
-                                <div class="info-row">
-                                    <div class="info-label">Цена</div>
-                                    <div class="info-value">
-                                        @{
-                                            var price = shipment.Price;
-                                            if (price > 0)
-                                            {
-                                                <span class="price-badge">
-                                                    <i class="fas fa-ruble-sign me-1"></i>
-                                                    @FormatNumber(price)
-                                                </span>
-                                            }
-                                            else
-                                            {
-                                                <span class="badge bg-secondary">
-                                                    <i class="fas fa-question me-1"></i>
-                                                    Не указана
-                                                </span>
-                                            }
-                                        }
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-
-                    <!-- Примечания и действия -->
-                    <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
-                        <div>
-                            @if (!string.IsNullOrEmpty(shipment.Notes))
-                            {
-                                <div class="text-muted small">
-                                    <i class="fas fa-sticky-note me-1"></i>
-                                    @(shipment.Notes.Length > 100 ? shipment.Notes.Substring(0, 100) + "..." : shipment.Notes)
-                                </div>
-                            }
-                        </div>
-
-                        <div class="actions-container">
-                            <a asp-action="Details" asp-route-id="@shipment.Id"
-                               class="btn btn-outline-info btn-action">
-                                <i class="fas fa-eye"></i>
-                                Просмотр
-                            </a>
-
-                            @if (!isManagerOrAdmin || (isManagerOrAdmin && shipment.Status != ShipmentStatus.Delivered && shipment.Status != ShipmentStatus.Cancelled))
-                            {
-                                <a asp-action="Edit" asp-route-id="@shipment.Id"
-                                   class="btn btn-outline-primary btn-action">
-                                    <i class="fas fa-edit"></i>
-                                    Редактировать
-                                </a>
-                            }
-
-                            @if (isManagerOrAdmin && shipment.Status != ShipmentStatus.Delivered && shipment.Status != ShipmentStatus.Cancelled)
-                            {
-                                <form asp-action="Delete" asp-route-id="@shipment.Id"
-                                      method="post" class="d-inline"
-                                      onsubmit="return confirm('Вы уверены, что хотите удалить заказ №@shipment.OrderNumber?');">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-outline-danger btn-action">
-                                        <i class="fas fa-trash"></i>
-                                        Удалить
-                                    </button>
-                                </form>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-    }
-</div>
-
-@section Scripts {
-    <script>
-        $(document).ready(function() {
-            // Автоматическое скрытие alert через 5 секунд
-            setTimeout(function() {
-                $('.alert').fadeOut('slow');
-            }, 5000);
-
-            // Плавная анимация карточек при загрузке
-            $('.order-card').each(function(index) {
-                $(this).hide().delay(index * 100).fadeIn(300);
-            });
-
-            // Подтверждение удаления с номером заказа
-            $('form[onsubmit]').submit(function(e) {
-                var orderNumber = $(this).closest('.order-card').find('.order-number').text();
-                return confirm('Вы уверены, что хотите удалить ' + orderNumber + '?');
-            });
-        });
-    </script>
-}
-
 @functions {
-    // Функция для форматирования чисел (убирает лишние нули)
-    string FormatNumber(decimal number)
+    string GetCargoTypeDisplayName(CargoType cargoType)
     {
-        // Убираем лишние нули после запятой
-        var str = number.ToString("0.##########");
+        if (cargoType == null || cargoType.ToString() == "0" || cargoType.ToString() == "None")
+            return "Не указан";
 
-        // Убираем запятую если после нее только нули
-        if (str.Contains(',') && str.EndsWith(",0"))
-        {
-            str = str.Substring(0, str.Length - 2);
-        }
-        else if (str.Contains(',') && str.EndsWith(",00"))
-        {
-            str = str.Substring(0, str.Length - 3);
-        }
+        var name = cargoType.ToString().ToLower();
+        if (string.IsNullOrEmpty(name))
+            return "Не указан";
 
-        return str;
-    }
-
-    // Функция для получения класса для статус-бейджа
-    string GetStatusBadgeClass(ShipmentStatus status)
-    {
-        return status switch
+        return name switch
         {
-            ShipmentStatus.Pending => "badge-pending",
-            ShipmentStatus.Processing => "badge-processing",
-            ShipmentStatus.Assigned => "badge-assigned",
-            ShipmentStatus.InTransit => "badge-inTransit",
-            ShipmentStatus.Delivered => "badge-delivered",
-            ShipmentStatus.Cancelled => "badge-cancelled",
-            _ => "badge-secondary"
+            "general" => "Обычный груз",
+            "standard" => "Стандартный",
+            "fragile" => "Хрупкий",
+            "perishable" => "Скоропортящийся",
+            "dangerous" => "Опасный груз",
+            "hazardous" => "Опасный",
+            "oversized" => "Крупногабаритный",
+            "oversize" => "Крупногабаритный",
+            "large" => "Крупногабаритный",
+            "liquid" => "Жидкость",
+            "temperaturecontrolled" => "Температурный контроль",
+            "refrigerated" => "Охлаждаемый",
+            "container" => "Контейнерный",
+            "bulk" => "Насыпной",
+            "package" => "Упакованный",
+            "pallets" => "Паллеты",
+            "machinery" => "Оборудование",
+            "equipment" => "Оборудование",
+            "appliances" => "Бытовая техника",
+            "electronics" => "Электроника",
+            "documents" => "Документы",
+            "food" => "Продукты питания",
+            "clothing" => "Одежда",
+            "furniture" => "Мебель",
+            "construction" => "Строительные материалы",
+            "medical" => "Медицинские товары",
+            "chemical" => "Химикаты",
+            "chemicals" => "Химикаты",
+            "automotive" => "Автозапчасти",
+            "textile" => "Текстиль",
+            "cosmetics" => "Косметика",
+            "books" => "Книги",
+            "toys" => "Игрушки",
+            "sport" => "Спортивный инвентарь",
+            "music" => "Музыкальное оборудование",
+            "art" => "Произведения искусства",
+            "jewelry" => "Ювелирные изделия",
+            "plants" => "Растения",
+            "animals" => "Животные",
+            "small" => "Малый груз",
+            "medium" => "Средний груз",
+            "other" => "Другой",
+            _ => cargoType.ToString()
         };
     }
 
-    // Функция для преобразования статуса в русское название
+    string GetVehicleTypeDisplayName(VehicleType vehicleType)
+    {
+        if (vehicleType == null || vehicleType.ToString() == "0" || vehicleType.ToString() == "None")
+            return "Не указан";
+
+        var name = vehicleType.ToString().ToLower();
+        if (string.IsNullOrEmpty(name))
+            return "Не указан";
+
+        return name switch
+        {
+            "truck" => "Грузовик",
+            "van" => "Фургон",
+            "refrigerator" => "Рефрижератор",
+            "refrigerated" => "Рефрижератор",
+            "tanker" => "Цистерна",
+            "container" => "Контейнеровоз",
+            "car" => "Легковой автомобиль",
+            "minivan" => "Минивэн",
+            "pickup" => "Пикап",
+            "trailer" => "Прицеп",
+            "flatbed" => "Платформа",
+            "semi" => "Фура",
+            "boxtruck" => "Бортовой грузовик",
+            "towing" => "Эвакуатор",
+            "motorcycle" => "Мотоцикл",
+            "bicycle" => "Велосипед",
+            "bus" => "Автобус",
+            "suv" => "Внедорожник",
+            "courier" => "Курьерский транспорт",
+            "any" => "Любой",
+            "other" => "Другой",
+            "sedan" => "Седан",
+            "hatchback" => "Хэтчбек",
+            "wagon" => "Универсал",
+            "coupe" => "Купе",
+            "convertible" => "Кабриолет",
+            "crossover" => "Кроссовер",
+            "limousine" => "Лимузин",
+            "tractor" => "Трактор",
+            "excavator" => "Экскаватор",
+            "crane" => "Кран",
+            "forklift" => "Погрузчик",
+            "smalltruck" => "Маленький грузовик",
+            "mediumtruck" => "Средний грузовик",
+            "largetruck" => "Большой грузовик",
+            "small" => "Маленький",
+            "medium" => "Средний",
+            "large" => "Большой",
+            "lighttruck" => "Легкий грузовик",
+            "heavytruck" => "Тяжелый грузовик",
+            "deliveryvan" => "Доставной фургон",
+            "cargovan" => "Грузовой фургон",
+            "paneltruck" => "Фургон-панель",
+            "dumptruck" => "Самосвал",
+            "cementtruck" => "Цементовоз",
+            "logistics" => "Логистический",
+            "transport" => "Транспорт",
+            _ => vehicleType.ToString()
+        };
+    }
+
     string GetStatusDisplayName(ShipmentStatus status)
     {
         return status switch
@@ -589,105 +262,175 @@
         };
     }
 
-    // УНИВЕРСАЛЬНАЯ ФУНКЦИЯ для преобразования типа груза в русское название
-    string GetCargoTypeDisplayName(CargoType cargoType)
+    string GetStatusBadgeClass(ShipmentStatus status)
     {
-        if (cargoType == null || cargoType.ToString() == "0" || cargoType.ToString() == "None")
-            return "Не указан";
-
-        var name = cargoType.ToString();
-        if (string.IsNullOrEmpty(name))
-            return "Не указан";
-
-        return name switch
+        return status switch
         {
-            "General" => "Обычный груз",
-            "Standard" => "Стандартный",
-            "Fragile" => "Хрупкий",
-            "Perishable" => "Скоропортящийся",
-            "Dangerous" => "Опасный груз",
-            "Hazardous" => "Опасный",
-            "Oversized" => "Крупногабаритный",
-            "Oversize" => "Крупногабаритный",
-            "Large" => "Крупногабаритный",
-            "Liquid" => "Жидкость",
-            "TemperatureControlled" => "Температурный контроль",
-            "Refrigerated" => "Охлаждаемый",
-            "Container" => "Контейнерный",
-            "Bulk" => "Насыпной",
-            "Package" => "Упакованный",
-            "Pallets" => "Паллеты",
-            "Machinery" => "Оборудование",
-            "Equipment" => "Оборудование",
-            "Appliances" => "Бытовая техника", // Исправлено с английского
-            "Electronics" => "Электроника",
-            "Documents" => "Документы",
-            "Food" => "Продукты питания",
-            "Clothing" => "Одежда",
-            "Furniture" => "Мебель",
-            "Construction" => "Строительные материалы",
-            "Medical" => "Медицинские товары",
-            "Chemical" => "Химические вещества",
-            "Automotive" => "Автозапчасти",
-            "Textile" => "Текстиль",
-            "Cosmetics" => "Косметика",
-            "Books" => "Книги",
-            "Toys" => "Игрушки",
-            "Sport" => "Спортивный инвентарь",
-            "Music" => "Музыкальное оборудование",
-            "Art" => "Произведения искусства",
-            "Jewelry" => "Ювелирные изделия",
-            "Plants" => "Растения",
-            "Animals" => "Животные",
-            _ => name
+            ShipmentStatus.Pending => "bg-secondary",
+            ShipmentStatus.Processing => "bg-info",
+            ShipmentStatus.Assigned => "bg-primary",
+            ShipmentStatus.InTransit => "bg-warning",
+            ShipmentStatus.Delivered => "bg-success",
+            ShipmentStatus.Cancelled => "bg-danger",
+            _ => "bg-secondary"
         };
     }
+}
 
-    // УНИВЕРСАЛЬНАЯ ФУНКЦИЯ для преобразования типа транспорта в русское название
-    string GetVehicleTypeDisplayName(VehicleType vehicleType)
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-boxes me-2"></i>@ViewData["Title"]
+        </h1>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Новый заказ
+        </a>
+    </div>
+
+    @if (!Model.Any())
     {
-        if (vehicleType == null || vehicleType.ToString() == "0" || vehicleType.ToString() == "None")
-            return "Не указан";
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            У вас пока нет заказов. <a asp-action="Create" class="alert-link">Создайте первый заказ</a>.
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>№ Заказа</th>
+                                <th>Дата создания</th>
+                                <th>Тип груза</th>
+                                <th>Тип транспорта</th>
+                                <th>Вес/Объем</th>
+                                <th>Статус</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@item.OrderNumber</strong>
+                                        <div class="small text-muted">
+                                            @item.PickupAddress → @item.DeliveryAddress
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @item.CreatedAt.ToString("dd.MM.yyyy HH:mm")
+                                    </td>
+                                    <td>
+                                        @GetCargoTypeDisplayName(item.CargoType)
+                                    </td>
+                                    <td>
+                                        @GetVehicleTypeDisplayName(item.VehicleType)
+                                    </td>
+                                    <td>
+                                        @FormatNumber(item.Weight) кг / @FormatNumber(item.Volume) м³
+                                    </td>
+                                    <td>
+                                        <span class="badge @GetStatusBadgeClass(item.Status)">
+                                            @GetStatusDisplayName(item.Status)
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <!-- Кнопка просмотра -->
+                                            <a asp-action="Details" asp-route-id="@item.Id"
+                                               class="action-btn btn-view" data-tooltip="Просмотр">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
 
-        var name = vehicleType.ToString();
-        if (string.IsNullOrEmpty(name))
-            return "Не указан";
+                                            <!-- Кнопка редактирования -->
+                                            <a asp-action="Edit" asp-route-id="@item.Id"
+                                               class="action-btn btn-edit" data-tooltip="Редактировать">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
 
-        return name switch
+                                            <!-- Кнопка удаления -->
+                                            @if (item.Status == ShipmentStatus.Pending ||
+                                                                                item.Status == ShipmentStatus.Processing)
+                                            {
+                                                <button type="button"
+                                                        class="action-btn btn-delete"
+                                                        data-tooltip="Удалить"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#deleteModal-@item.Id">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            }
+                                        </div>
+
+                                        <!-- Модальное окно подтверждения удаления -->
+                                        <div class="modal fade" id="deleteModal-@item.Id" tabindex="-1"
+                                             aria-labelledby="deleteModalLabel-@item.Id" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="deleteModalLabel-@item.Id">
+                                                            Подтверждение удаления
+                                                        </h5>
+                                                        <button type="button" class="btn-close"
+                                                                data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Вы уверены, что хотите удалить заказ <strong>@item.OrderNumber</strong>?</p>
+                                                        <p class="text-danger">
+                                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                                            Это действие нельзя отменить.
+                                                        </p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary"
+                                                                data-bs-dismiss="modal">
+                                                            Отмена
+                                                        </button>
+                                                        <form asp-action="Delete" method="post">
+                                                            @Html.AntiForgeryToken()
+                                                            <input type="hidden" name="id" value="@item.Id" />
+                                                            <button type="submit" class="btn btn-danger">
+                                                                <i class="fas fa-trash me-1"></i>Удалить
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Пагинация (если нужно) -->
+        @if (ViewBag.TotalPages > 1)
         {
-            "Truck" => "Грузовик",
-            "Van" => "Фургон",
-            "Refrigerator" => "Рефрижератор",
-            "Refrigerated" => "Рефрижератор",
-            "Tanker" => "Цистерна",
-            "Container" => "Контейнеровоз",
-            "Car" => "Легковой автомобиль",
-            "Minivan" => "Минивэн",
-            "Pickup" => "Пикап",
-            "Trailer" => "Прицеп",
-            "Flatbed" => "Платформа",
-            "Semi" => "Фура",
-            "BoxTruck" => "Бортовой грузовик",
-            "Towing" => "Эвакуатор",
-            "Motorcycle" => "Мотоцикл",
-            "Bicycle" => "Велосипед",
-            "Bus" => "Автобус",
-            "SUV" => "Внедорожник",
-            "Courier" => "Курьерский транспорт",
-            "Any" => "Любой",
-            "Other" => "Другой",
-            "Sedan" => "Седан",
-            "Hatchback" => "Хэтчбек",
-            "Wagon" => "Универсал",
-            "Coupe" => "Купе",
-            "Convertible" => "Кабриолет",
-            "Crossover" => "Кроссовер",
-            "Limousine" => "Лимузин",
-            "Tractor" => "Трактор",
-            "Excavator" => "Экскаватор",
-            "Crane" => "Кран",
-            "Forklift" => "Погрузчик",
-            _ => name
-        };
+            <nav aria-label="Навигация по страницам" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == ViewBag.CurrentPage ? "active" : "")">
+                            <a class="page-link" asp-action="Index" asp-route-page="@i">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        }
+    }
+</div>
+
+@functions {
+    string FormatNumber(decimal number)
+    {
+        var str = number.ToString("0.##");
+        return str;
     }
 }
