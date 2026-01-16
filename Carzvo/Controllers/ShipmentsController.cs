@@ -33,19 +33,6 @@ namespace Carzvo.Controllers
             return View(shipments);
         }
 
-        // GET: /Shipments/All - для менеджеров и админов
-        [Authorize(Roles = "Manager,Admin")]
-        public async Task<IActionResult> All()
-        {
-            var shipments = await _context.Shipments
-                .Include(s => s.User)
-                .Include(s => s.Driver)
-                .OrderByDescending(s => s.CreatedAt)
-                .ToListAsync();
-
-            return View(shipments);
-        }
-
         // GET: /Shipments/Create
         [Authorize]
         public IActionResult Create()
@@ -115,7 +102,12 @@ namespace Carzvo.Controllers
                 return NotFound();
             }
 
-            var shipment = await _context.Shipments.FindAsync(id);
+            // Загружаем с связанными данными
+            var shipment = await _context.Shipments
+                .Include(s => s.User)
+                .Include(s => s.Driver)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
             if (shipment == null)
             {
                 return NotFound();
@@ -142,14 +134,17 @@ namespace Carzvo.Controllers
         // POST: /Shipments/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Shipment shipment)
+        public async Task<IActionResult> Edit(int id, Shipment model)
         {
-            if (id != shipment.Id)
+            if (id != model.Id)
             {
                 return NotFound();
             }
 
-            var existingShipment = await _context.Shipments.FindAsync(id);
+            // Получаем заказ из базы данных
+            var existingShipment = await _context.Shipments
+                .FirstOrDefaultAsync(s => s.Id == id);
+
             if (existingShipment == null)
             {
                 return NotFound();
@@ -157,47 +152,61 @@ namespace Carzvo.Controllers
 
             // Проверка прав
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!User.IsInRole("Admin") && !User.IsInRole("Manager") && existingShipment.UserId != userId)
+            var isManagerOrAdmin = User.IsInRole("Manager") || User.IsInRole("Admin");
+
+            if (!isManagerOrAdmin && existingShipment.UserId != userId)
             {
                 return Forbid();
             }
 
-            if (ModelState.IsValid)
+            // ДЛЯ МЕНЕДЖЕРОВ: Убираем валидацию только для НЕредактируемых полей
+            if (isManagerOrAdmin)
             {
+                // Сохраняем оригинальные значения перед обновлением
+                var originalDescription = existingShipment.Description;
+                var originalPickupDate = existingShipment.PickupDate;
+                var originalDeliveryDate = existingShipment.DeliveryDate;
+                var originalPickupAddress = existingShipment.PickupAddress;
+                var originalDeliveryAddress = existingShipment.DeliveryAddress;
+                var originalWeight = existingShipment.Weight;
+                var originalVolume = existingShipment.Volume;
+                var originalCargoType = existingShipment.CargoType;
+                var originalVehicleType = existingShipment.VehicleType;
+                var originalNotes = existingShipment.Notes;
+                var originalUserId = existingShipment.UserId;
+                var originalCreatedAt = existingShipment.CreatedAt;
+
+                // Обновляем только разрешенные для менеджера поля
+                existingShipment.Status = model.Status;
+                existingShipment.DriverId = model.DriverId;
+                existingShipment.Price = model.Price;
+
+                // Если назначили водителя и статус был "Ожидает", меняем на "Назначен"
+                if (!string.IsNullOrEmpty(model.DriverId) && existingShipment.Status == ShipmentStatus.Pending)
+                {
+                    existingShipment.Status = ShipmentStatus.Assigned;
+                }
+
+                existingShipment.UpdatedAt = DateTime.Now;
+
                 try
                 {
-                    // Обновляем только разрешенные поля в зависимости от роли
-                    if (User.IsInRole("User"))
-                    {
-                        existingShipment.Description = shipment.Description;
-                        existingShipment.PickupDate = shipment.PickupDate;
-                        existingShipment.DeliveryDate = shipment.DeliveryDate;
-                        existingShipment.Notes = shipment.Notes;
-                    }
-                    else if (User.IsInRole("Manager") || User.IsInRole("Admin"))
-                    {
-                        existingShipment.Status = shipment.Status;
-                        existingShipment.DriverId = shipment.DriverId;
-                        existingShipment.Price = shipment.Price;
-
-                        // Если назначили водителя, меняем статус
-                        if (!string.IsNullOrEmpty(shipment.DriverId) && existingShipment.Status == ShipmentStatus.Pending)
-                        {
-                            existingShipment.Status = ShipmentStatus.Assigned;
-                        }
-                    }
-
-                    existingShipment.UpdatedAt = DateTime.Now;
-
                     _context.Update(existingShipment);
                     await _context.SaveChangesAsync();
 
-                    _logger.LogInformation($"Доставка обновлена: {existingShipment.OrderNumber}");
+                    _logger.LogInformation($"Доставка обновлена: {existingShipment.OrderNumber}. " +
+                                          $"Статус: {existingShipment.Status}, " +
+                                          $"Водитель: {existingShipment.DriverId}, " +
+                                          $"Цена: {existingShipment.Price}");
+
                     TempData["SuccessMessage"] = "Заказ успешно обновлен!";
+
+                    // Для менеджеров и админов - на Dashboard
+                    return RedirectToAction("Dashboard", "Home");
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!ShipmentExists(shipment.Id))
+                    if (!ShipmentExists(model.Id))
                     {
                         return NotFound();
                     }
@@ -206,11 +215,85 @@ namespace Carzvo.Controllers
                         throw;
                     }
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Ошибка при обновлении заказа");
 
-                return RedirectToAction(nameof(Index));
+                    // Восстанавливаем оригинальные значения при ошибке
+                    existingShipment.Description = originalDescription;
+                    existingShipment.PickupDate = originalPickupDate;
+                    existingShipment.DeliveryDate = originalDeliveryDate;
+                    existingShipment.PickupAddress = originalPickupAddress;
+                    existingShipment.DeliveryAddress = originalDeliveryAddress;
+                    existingShipment.Weight = originalWeight;
+                    existingShipment.Volume = originalVolume;
+                    existingShipment.CargoType = originalCargoType;
+                    existingShipment.VehicleType = originalVehicleType;
+                    existingShipment.Notes = originalNotes;
+                    existingShipment.UserId = originalUserId;
+                    existingShipment.CreatedAt = originalCreatedAt;
+
+                    ModelState.AddModelError("", "Произошла ошибка при сохранении изменений");
+                }
+            }
+            else
+            {
+                // ДЛЯ ОБЫЧНЫХ ПОЛЬЗОВАТЕЛЕЙ: стандартная валидация
+                if (ModelState.IsValid)
+                {
+                    try
+                    {
+                        // Для обычных пользователей
+                        existingShipment.Description = model.Description;
+                        existingShipment.PickupDate = model.PickupDate;
+                        existingShipment.DeliveryDate = model.DeliveryDate;
+                        existingShipment.Notes = model.Notes;
+                        existingShipment.UpdatedAt = DateTime.Now;
+
+                        _context.Update(existingShipment);
+                        await _context.SaveChangesAsync();
+
+                        _logger.LogInformation($"Доставка обновлена: {existingShipment.OrderNumber}");
+                        TempData["SuccessMessage"] = "Заказ успешно обновлен!";
+
+                        return RedirectToAction("Index", "Shipments");
+                    }
+                    catch (DbUpdateConcurrencyException)
+                    {
+                        if (!ShipmentExists(model.Id))
+                        {
+                            return NotFound();
+                        }
+                        else
+                        {
+                            throw;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Ошибка при обновлении заказа");
+                        ModelState.AddModelError("", "Произошла ошибка при сохранении изменений");
+                    }
+                }
             }
 
-            return View(shipment);
+            // Если есть ошибки, загружаем данные для представления
+            if (isManagerOrAdmin)
+            {
+                ViewBag.Drivers = await _context.Users
+                    .Where(u => u.IsDriver && u.Status == "Активен")
+                    .ToListAsync();
+
+                // Для менеджеров возвращаем оригинальный shipment с базы, чтобы не терять данные
+                var reloadedShipment = await _context.Shipments
+                    .Include(s => s.User)
+                    .Include(s => s.Driver)
+                    .FirstOrDefaultAsync(s => s.Id == id);
+
+                return View(reloadedShipment);
+            }
+
+            return View(existingShipment);
         }
 
         // GET: /Shipments/Delete/5
@@ -275,7 +358,8 @@ namespace Carzvo.Controllers
             // Перенаправление в зависимости от роли
             if (User.IsInRole("Admin") || User.IsInRole("Manager"))
             {
-                return RedirectToAction(nameof(All));
+                // Для менеджеров и админов - на Dashboard
+                return RedirectToAction("Dashboard", "Home");
             }
             else
             {

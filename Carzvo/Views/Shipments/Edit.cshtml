@@ -78,18 +78,34 @@
                     }
 
                     <form asp-action="Edit" method="post" id="editForm">
+                        <!-- Только ID для всех -->
                         <input type="hidden" asp-for="Id" />
-                        <input type="hidden" asp-for="OrderNumber" />
-                        <input type="hidden" asp-for="UserId" />
-                        <input type="hidden" asp-for="CreatedAt" />
 
-                        <!-- ДОБАВЛЕНО: скрытые поля для адресов, чтобы они передавались на сервер -->
-                        <input type="hidden" asp-for="PickupAddress" />
-                        <input type="hidden" asp-for="DeliveryAddress" />
-                        <input type="hidden" asp-for="Weight" />
-                        <input type="hidden" asp-for="Volume" />
-                        <input type="hidden" asp-for="CargoType" />
-                        <input type="hidden" asp-for="VehicleType" />
+                        <!-- Только для обычных пользователей -->
+                        @if (!isManagerOrAdmin)
+                        {
+                            <input type="hidden" asp-for="Status" />
+                            <input type="hidden" asp-for="DriverId" />
+                            <input type="hidden" asp-for="Price" />
+                        }
+
+                        <!-- Для менеджеров (скрытые поля для передачи данных на сервер) -->
+                        @if (isManagerOrAdmin)
+                        {
+                            <input type="hidden" asp-for="Description" />
+                            <input type="hidden" asp-for="PickupDate" />
+                            <input type="hidden" asp-for="DeliveryDate" />
+                            <input type="hidden" asp-for="PickupAddress" />
+                            <input type="hidden" asp-for="DeliveryAddress" />
+                            <input type="hidden" asp-for="Weight" />
+                            <input type="hidden" asp-for="Volume" />
+                            <input type="hidden" asp-for="CargoType" />
+                            <input type="hidden" asp-for="VehicleType" />
+                            <input type="hidden" asp-for="Notes" />
+                            <input type="hidden" asp-for="UserId" />
+                            <input type="hidden" asp-for="CreatedAt" />
+                            <input type="hidden" asp-for="OrderNumber" />
+                        }
 
                         @Html.AntiForgeryToken()
 
@@ -97,7 +113,6 @@
                             <!-- Для обычных пользователей -->
                             @if (!isManagerOrAdmin)
                             {
-                                <!-- ДОБАВЛЕНО: информация об адресах для обычных пользователей -->
                                 <div class="col-md-12 mb-4">
                                     <div class="card info-card">
                                         <div class="card-body">
@@ -161,7 +176,7 @@
                             else
                             {
                                 <!-- Для менеджеров и админов -->
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="mb-3">
                                         <label asp-for="Status" class="form-label required">Статус</label>
                                         <select asp-for="Status" class="form-select" required>
@@ -195,28 +210,49 @@
                                     </div>
                                 </div>
 
-                                <div class="col-md-6">
-                                    <div class="card info-card">
+                                <div class="col-md-4">
+                                    <!-- Карточка с информацией о клиенте -->
+                                    <div class="card info-card h-100">
                                         <div class="card-body">
                                             <h6 class="card-title mb-3">
-                                                <i class="fas fa-info-circle me-2"></i>Информация о заказе
+                                                <i class="fas fa-user me-2"></i>Информация о клиенте
                                             </h6>
 
                                             <div class="row">
-                                                <div class="col-6 mb-2">
-                                                    <div class="text-muted small">№ Заказа</div>
-                                                    <div class="fw-medium">@Model.OrderNumber</div>
-                                                </div>
-                                                <div class="col-6 mb-2">
+                                                <div class="col-12 mb-2">
                                                     <div class="text-muted small">Клиент</div>
-                                                    <div class="fw-medium">@Model.User?.FullName</div>
+                                                    <div class="fw-medium">@(Model.User?.FullName ?? "Не указан")</div>
                                                 </div>
                                             </div>
 
                                             <div class="row">
                                                 <div class="col-12 mb-2">
                                                     <div class="text-muted small">Телефон</div>
-                                                    <div class="fw-medium">@Model.User?.PhoneNumber</div>
+                                                    <div class="fw-medium">@(Model.User?.PhoneNumber ?? "Не указан")</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="row">
+                                                <div class="col-12 mb-2">
+                                                    <div class="text-muted small">Email</div>
+                                                    <div class="fw-medium">@(Model.User?.Email ?? "Не указан")</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="card info-card h-100">
+                                        <div class="card-body">
+                                            <h6 class="card-title mb-3">
+                                                <i class="fas fa-info-circle me-2"></i>Информация о заказе
+                                            </h6>
+
+                                            <div class="row">
+                                                <div class="col-12 mb-2">
+                                                    <div class="text-muted small">№ Заказа</div>
+                                                    <div class="fw-medium">@Model.OrderNumber</div>
                                                 </div>
                                             </div>
 
@@ -262,6 +298,36 @@
                                                 </div>
                                             </div>
 
+                                            <!-- Описание груза -->
+                                            <div class="row">
+                                                <div class="col-12 mb-2">
+                                                    <div class="text-muted small">Описание груза</div>
+                                                    <div class="fw-medium">@Model.Description</div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Даты -->
+                                            <div class="row">
+                                                <div class="col-6 mb-2">
+                                                    <div class="text-muted small">Дата загрузки</div>
+                                                    <div class="fw-medium">@Model.PickupDate.ToString("dd.MM.yyyy HH:mm")</div>
+                                                </div>
+                                                <div class="col-6 mb-2">
+                                                    <div class="text-muted small">Дата доставки</div>
+                                                    <div class="fw-medium">@Model.DeliveryDate.ToString("dd.MM.yyyy HH:mm")</div>
+                                                </div>
+                                            </div>
+
+                                            @if (!string.IsNullOrEmpty(Model.Notes))
+                                            {
+                                                <div class="row">
+                                                    <div class="col-12 mb-2">
+                                                        <div class="text-muted small">Примечания</div>
+                                                        <div class="fw-medium">@Model.Notes</div>
+                                                    </div>
+                                                </div>
+                                            }
+
                                             <div class="row">
                                                 <div class="col-12 mb-2">
                                                     <div class="text-muted small">Дата создания</div>
@@ -293,7 +359,6 @@
 
                         <div class="d-flex justify-content-between mt-4 pt-3 border-top">
                             <a asp-controller="Home" asp-action="Dashboard" class="btn btn-secondary">
-                                <!-- ИЗМЕНЕНО -->
                                 <i class="fas fa-boxes me-2"></i>Назад к списку
                             </a>
                             <div class="d-flex gap-2">
@@ -333,19 +398,24 @@
             }
 
             // Установка текущего времени по умолчанию, если поля пустые
-            const pickupDateInput = document.getElementById('PickupDate');
-            const deliveryDateInput = document.getElementById('DeliveryDate');
+            @if (!isManagerOrAdmin)
+            {
+                <text>
+                const pickupDateInput = document.getElementById('PickupDate');
+                const deliveryDateInput = document.getElementById('DeliveryDate');
 
-            if (pickupDateInput && !pickupDateInput.value) {
-                const now = new Date();
-                const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000); // +1 час
-                pickupDateInput.value = formatDateTimeLocal(oneHourLater);
-            }
+                if (pickupDateInput && !pickupDateInput.value) {
+                    const now = new Date();
+                    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000); // +1 час
+                    pickupDateInput.value = formatDateTimeLocal(oneHourLater);
+                }
 
-            if (deliveryDateInput && !deliveryDateInput.value) {
-                const pickupDate = pickupDateInput ? new Date(pickupDateInput.value) : new Date();
-                const twoHoursLater = new Date(pickupDate.getTime() + 2 * 60 * 60 * 1000); // +2 часа
-                deliveryDateInput.value = formatDateTimeLocal(twoHoursLater);
+                if (deliveryDateInput && !deliveryDateInput.value) {
+                    const pickupDate = pickupDateInput ? new Date(pickupDateInput.value) : new Date();
+                    const twoHoursLater = new Date(pickupDate.getTime() + 2 * 60 * 60 * 1000); // +2 часа
+                    deliveryDateInput.value = formatDateTimeLocal(twoHoursLater);
+                }
+                </text>
             }
 
             // Обработка отправки формы
@@ -355,24 +425,26 @@
                 // Проверка валидации
                 if (!$(this).valid()) {
                     console.log('Форма не прошла валидацию');
-                    return true; // Позволяем показать ошибки валидации
+                    return true;
                 }
 
-                // Проверка дат
-                const pickupDate = new Date($('#PickupDate').val());
-                const deliveryDate = new Date($('#DeliveryDate').val());
-
-                if (deliveryDate <= pickupDate) {
-                    alert('Ошибка: Дата доставки должна быть позже даты загрузки!');
-                    e.preventDefault();
-                    return false;
+                // Проверка дат (только для обычных пользователей)
+                @if (!isManagerOrAdmin)
+                {
+                    @:const pickupDate = new Date($('#PickupDate').val());
+                    @:const deliveryDate = new Date($('#DeliveryDate').val());
+                    @:
+                    @:if (deliveryDate <= pickupDate) {
+                    @:    alert('Ошибка: Дата доставки должна быть позже даты загрузки!');
+                    @:    e.preventDefault();
+                    @:    return false;
+                    @:}
                 }
 
                 // Показываем индикатор загрузки
                 $('#saveButton').html('<i class="fas fa-spinner fa-spin me-2"></i>Сохранение...');
                 $('#saveButton').prop('disabled', true);
 
-                // Форма отправится автоматически после успешной валидации
                 return true;
             });
 
@@ -386,13 +458,11 @@
 }
 
 @functions {
-    // Функция для форматирования чисел (убирает лишние нули)
+    // Функция для форматирования чисел
     string FormatNumber(decimal number)
     {
-        // Убираем лишние нули после запятой
         var str = number.ToString("0.##########");
 
-        // Убираем запятую если после нее только нули
         if (str.Contains(',') && str.EndsWith(",0"))
         {
             str = str.Substring(0, str.Length - 2);
@@ -411,7 +481,7 @@
         {
             ShipmentStatus.Pending => "Ожидает",
             ShipmentStatus.Processing => "Обрабатывается",
-            ShipmentStatus.Assigned => "Назначен",
+            ShipmentStatus.Assigned => "Назначен водитель",
             ShipmentStatus.InTransit => "В пути",
             ShipmentStatus.Delivered => "Доставлен",
             ShipmentStatus.Cancelled => "Отменен",
@@ -515,6 +585,8 @@
             "Excavator" => "Экскаватор",
             "Crane" => "Кран",
             "Forklift" => "Погрузчик",
+            "SmallTruck" => "Маленький грузовик",
+            "Small Truck" => "Маленький грузовик",
             _ => name
         };
     }

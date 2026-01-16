@@ -1,8 +1,12 @@
 ﻿@model Carzvo.Models.Shipment
 @using Carzvo.Models
+@using System.Security.Claims
 
 @{
     ViewData["Title"] = "Детали заказа";
+    var isDriver = User.IsInRole("Driver");
+    var isManagerOrAdmin = User.IsInRole("Manager") || User.IsInRole("Admin");
+    var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 }
 
 <div class="container mt-4">
@@ -12,7 +16,6 @@
                 <h1><i class="fas fa-box me-2"></i>@ViewData["Title"]</h1>
                 <div>
                     <a asp-controller="Home" asp-action="Dashboard" class="btn btn-secondary">
-                        <!-- ИЗМЕНЕНО -->
                         <i class="fas fa-arrow-left me-2"></i>Назад к списку
                     </a>
                 </div>
@@ -184,11 +187,16 @@
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
-                        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning d-flex align-items-center justify-content-center">
-                            <i class="fas fa-edit me-2"></i>Редактировать заказ
-                        </a>
+                        @if (!isDriver)
+                        {
+                            <!-- Показываем кнопку редактирования только НЕ водителям -->
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning d-flex align-items-center justify-content-center">
+                                <i class="fas fa-edit me-2"></i>Редактировать заказ
+                            </a>
+                        }
 
-                        @if (Model.Status == ShipmentStatus.Pending)
+                        <!-- Удаление - показываем только если это не водитель и заказ в статусе ожидания -->
+                        @if (!isDriver && Model.Status == ShipmentStatus.Pending)
                         {
                             <form asp-action="Delete" method="post" onsubmit="return confirm('Удалить заказ @Model.OrderNumber?');">
                                 <input type="hidden" name="id" value="@Model.Id" />
@@ -199,8 +207,35 @@
                             </form>
                         }
 
+                        <!-- Кнопки управления статусом для водителей -->
+                        @if (isDriver && Model.DriverId == currentUserId)
+                        {
+                            if (Model.Status == ShipmentStatus.Assigned)
+                            {
+                                <form asp-action="UpdateStatus" method="post" onsubmit="return confirm('Начать выполнение заказа?');">
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <input type="hidden" name="status" value="@ShipmentStatus.InTransit" />
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-play me-2"></i>Начать выполнение
+                                    </button>
+                                </form>
+                            }
+
+                            if (Model.Status == ShipmentStatus.InTransit)
+                            {
+                                <form asp-action="UpdateStatus" method="post" onsubmit="return confirm('Отметить заказ как доставленный?');">
+                                    <input type="hidden" name="id" value="@Model.Id" />
+                                    <input type="hidden" name="status" value="@ShipmentStatus.Delivered" />
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-success w-100 d-flex align-items-center justify-content-center">
+                                        <i class="fas fa-check me-2"></i>Доставлен
+                                    </button>
+                                </form>
+                            }
+                        }
+
                         <a asp-controller="Home" asp-action="Dashboard" class="btn btn-outline-secondary d-flex align-items-center justify-content-center">
-                            <!-- ИЗМЕНЕНО -->
                             <i class="fas fa-boxes me-2"></i>К списку заказов
                         </a>
                     </div>
