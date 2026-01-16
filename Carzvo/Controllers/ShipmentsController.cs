@@ -5,6 +5,7 @@ using Carzvo.Data;
 using Carzvo.Models;
 using System.Security.Claims;
 
+
 namespace Carzvo.Controllers
 {
     [Authorize]
@@ -59,7 +60,7 @@ namespace Carzvo.Controllers
                 _logger.LogInformation($"Новая доставка создана: {shipment.OrderNumber}");
 
                 TempData["SuccessMessage"] = "Заказ успешно создан! Номер вашего заказа: " + shipment.OrderNumber;
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction("Dashboard", "Home");
             }
 
             return View(shipment);
@@ -134,166 +135,128 @@ namespace Carzvo.Controllers
         // POST: /Shipments/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Shipment model)
+        public async Task<IActionResult> Edit(int id, IFormCollection form)
         {
-            if (id != model.Id)
+            try
             {
-                return NotFound();
-            }
+                _logger.LogInformation($"=== НАЧАЛО ОБНОВЛЕНИЯ ЗАКАЗА {id} ===");
+                _logger.LogInformation($"Пользователь: {User.Identity?.Name}");
+                _logger.LogInformation($"Роли: Manager={User.IsInRole("Manager")}, Admin={User.IsInRole("Admin")}, User={User.IsInRole("User")}");
 
-            // Получаем заказ из базы данных
-            var existingShipment = await _context.Shipments
-                .FirstOrDefaultAsync(s => s.Id == id);
-
-            if (existingShipment == null)
-            {
-                return NotFound();
-            }
-
-            // Проверка прав
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var isManagerOrAdmin = User.IsInRole("Manager") || User.IsInRole("Admin");
-
-            if (!isManagerOrAdmin && existingShipment.UserId != userId)
-            {
-                return Forbid();
-            }
-
-            // ДЛЯ МЕНЕДЖЕРОВ: Убираем валидацию только для НЕредактируемых полей
-            if (isManagerOrAdmin)
-            {
-                // Сохраняем оригинальные значения перед обновлением
-                var originalDescription = existingShipment.Description;
-                var originalPickupDate = existingShipment.PickupDate;
-                var originalDeliveryDate = existingShipment.DeliveryDate;
-                var originalPickupAddress = existingShipment.PickupAddress;
-                var originalDeliveryAddress = existingShipment.DeliveryAddress;
-                var originalWeight = existingShipment.Weight;
-                var originalVolume = existingShipment.Volume;
-                var originalCargoType = existingShipment.CargoType;
-                var originalVehicleType = existingShipment.VehicleType;
-                var originalNotes = existingShipment.Notes;
-                var originalUserId = existingShipment.UserId;
-                var originalCreatedAt = existingShipment.CreatedAt;
-
-                // Обновляем только разрешенные для менеджера поля
-                existingShipment.Status = model.Status;
-                existingShipment.DriverId = model.DriverId;
-                existingShipment.Price = model.Price;
-
-                // Если назначили водителя и статус был "Ожидает", меняем на "Назначен"
-                if (!string.IsNullOrEmpty(model.DriverId) && existingShipment.Status == ShipmentStatus.Pending)
+                // Логируем все данные формы
+                foreach (var key in form.Keys)
                 {
-                    existingShipment.Status = ShipmentStatus.Assigned;
+                    _logger.LogInformation($"  {key}: {form[key]}");
                 }
 
-                existingShipment.UpdatedAt = DateTime.Now;
-
-                try
+                // Находим заказ
+                var shipment = await _context.Shipments.FindAsync(id);
+                if (shipment == null)
                 {
-                    _context.Update(existingShipment);
-                    await _context.SaveChangesAsync();
-
-                    _logger.LogInformation($"Доставка обновлена: {existingShipment.OrderNumber}. " +
-                                          $"Статус: {existingShipment.Status}, " +
-                                          $"Водитель: {existingShipment.DriverId}, " +
-                                          $"Цена: {existingShipment.Price}");
-
-                    TempData["SuccessMessage"] = "Заказ успешно обновлен!";
-
-                    // Для менеджеров и админов - на Dashboard
-                    return RedirectToAction("Dashboard", "Home");
+                    _logger.LogError($"Заказ {id} не найден");
+                    return NotFound();
                 }
-                catch (DbUpdateConcurrencyException)
+
+                _logger.LogInformation($"Текущий статус: {shipment.Status}, цена: {shipment.Price}, водитель: {shipment.DriverId}");
+
+                // Определяем роль
+                var isManagerOrAdmin = User.IsInRole("Manager") || User.IsInRole("Admin");
+                var isUser = User.IsInRole("User");
+
+                if (!isManagerOrAdmin && shipment.UserId != User.FindFirstValue(ClaimTypes.NameIdentifier))
                 {
-                    if (!ShipmentExists(model.Id))
+                    _logger.LogWarning($"Доступ запрещен. UserId: {shipment.UserId}, текущий пользователь: {User.FindFirstValue(ClaimTypes.NameIdentifier)}");
+                    return Forbid();
+                }
+
+                // ОБНОВЛЕНИЕ ДАННЫХ
+                if (isManagerOrAdmin)
+                {
+                    _logger.LogInformation("Обновление как менеджер/админ");
+
+                    // Статус
+                    if (Enum.TryParse<ShipmentStatus>(form["Status"], out var newStatus))
                     {
-                        return NotFound();
+                        _logger.LogInformation($"Новый статус: {newStatus}");
+                        shipment.Status = newStatus;
                     }
                     else
                     {
-                        throw;
+                        _logger.LogWarning($"Не удалось распарсить статус: {form["Status"]}");
+                    }
+
+                    // Водитель
+                    var driverId = form["DriverId"].ToString();
+                    _logger.LogInformation($"Новый водитель ID: {driverId}");
+                    shipment.DriverId = string.IsNullOrEmpty(driverId) ? null : driverId;
+
+                    // Цена
+                    if (decimal.TryParse(form["Price"].ToString().Replace(',', '.'),
+                        System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture,
+                        out decimal price))
+                    {
+                        _logger.LogInformation($"Новая цена: {price}");
+                        shipment.Price = Math.Max(0, Math.Min(price, 1000000));
+                    }
+                    else
+                    {
+                        _logger.LogWarning($"Не удалось распарсить цену: {form["Price"]}");
+                    }
+
+                    // Автоматическое изменение статуса при назначении водителя
+                    if (!string.IsNullOrEmpty(shipment.DriverId) && shipment.Status == ShipmentStatus.Pending)
+                    {
+                        shipment.Status = ShipmentStatus.Assigned;
+                        _logger.LogInformation($"Автоматически меняем статус на: {ShipmentStatus.Assigned}");
                     }
                 }
-                catch (Exception ex)
+                else if (isUser)
                 {
-                    _logger.LogError(ex, "Ошибка при обновлении заказа");
+                    _logger.LogInformation("Обновление как обычный пользователь");
 
-                    // Восстанавливаем оригинальные значения при ошибке
-                    existingShipment.Description = originalDescription;
-                    existingShipment.PickupDate = originalPickupDate;
-                    existingShipment.DeliveryDate = originalDeliveryDate;
-                    existingShipment.PickupAddress = originalPickupAddress;
-                    existingShipment.DeliveryAddress = originalDeliveryAddress;
-                    existingShipment.Weight = originalWeight;
-                    existingShipment.Volume = originalVolume;
-                    existingShipment.CargoType = originalCargoType;
-                    existingShipment.VehicleType = originalVehicleType;
-                    existingShipment.Notes = originalNotes;
-                    existingShipment.UserId = originalUserId;
-                    existingShipment.CreatedAt = originalCreatedAt;
+                    // Описание
+                    shipment.Description = form["Description"].ToString();
 
-                    ModelState.AddModelError("", "Произошла ошибка при сохранении изменений");
+                    // Даты
+                    if (DateTime.TryParse(form["PickupDate"], out DateTime pickupDate))
+                        shipment.PickupDate = pickupDate;
+
+                    if (DateTime.TryParse(form["DeliveryDate"], out DateTime deliveryDate))
+                        shipment.DeliveryDate = deliveryDate;
+
+                    // Примечания
+                    shipment.Notes = form["Notes"].ToString();
                 }
-            }
-            else
-            {
-                // ДЛЯ ОБЫЧНЫХ ПОЛЬЗОВАТЕЛЕЙ: стандартная валидация
-                if (ModelState.IsValid)
+
+                shipment.UpdatedAt = DateTime.Now;
+
+                _logger.LogInformation($"Перед сохранением: Status={shipment.Status}, Price={shipment.Price}, DriverId={shipment.DriverId}");
+
+                // СОХРАНЕНИЕ В БАЗУ
+                _context.Update(shipment);
+                int changes = await _context.SaveChangesAsync();
+
+                _logger.LogInformation($"Изменений в базе: {changes}");
+                _logger.LogInformation($"=== КОНЕЦ ОБНОВЛЕНИЯ ЗАКАЗА {id} ===");
+
+                if (changes > 0)
                 {
-                    try
-                    {
-                        // Для обычных пользователей
-                        existingShipment.Description = model.Description;
-                        existingShipment.PickupDate = model.PickupDate;
-                        existingShipment.DeliveryDate = model.DeliveryDate;
-                        existingShipment.Notes = model.Notes;
-                        existingShipment.UpdatedAt = DateTime.Now;
-
-                        _context.Update(existingShipment);
-                        await _context.SaveChangesAsync();
-
-                        _logger.LogInformation($"Доставка обновлена: {existingShipment.OrderNumber}");
-                        TempData["SuccessMessage"] = "Заказ успешно обновлен!";
-
-                        return RedirectToAction("Index", "Shipments");
-                    }
-                    catch (DbUpdateConcurrencyException)
-                    {
-                        if (!ShipmentExists(model.Id))
-                        {
-                            return NotFound();
-                        }
-                        else
-                        {
-                            throw;
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Ошибка при обновлении заказа");
-                        ModelState.AddModelError("", "Произошла ошибка при сохранении изменений");
-                    }
+                    TempData["SuccessMessage"] = $"Заказ успешно обновлен! Изменено записей: {changes}";
                 }
-            }
+                else
+                {
+                    TempData["ErrorMessage"] = "Не удалось сохранить изменения";
+                }
 
-            // Если есть ошибки, загружаем данные для представления
-            if (isManagerOrAdmin)
+                return RedirectToAction("Dashboard", "Home");
+            }
+            catch (Exception ex)
             {
-                ViewBag.Drivers = await _context.Users
-                    .Where(u => u.IsDriver && u.Status == "Активен")
-                    .ToListAsync();
-
-                // Для менеджеров возвращаем оригинальный shipment с базы, чтобы не терять данные
-                var reloadedShipment = await _context.Shipments
-                    .Include(s => s.User)
-                    .Include(s => s.Driver)
-                    .FirstOrDefaultAsync(s => s.Id == id);
-
-                return View(reloadedShipment);
+                _logger.LogError(ex, $"ОШИБКА при обновлении заказа {id}");
+                TempData["ErrorMessage"] = $"Ошибка: {ex.Message}";
+                return RedirectToAction("Edit", new { id });
             }
-
-            return View(existingShipment);
         }
 
         // GET: /Shipments/Delete/5
@@ -386,32 +349,83 @@ namespace Carzvo.Controllers
         [Authorize(Roles = "Driver")]
         public async Task<IActionResult> UpdateStatus(int id, ShipmentStatus status)
         {
-            var shipment = await _context.Shipments.FindAsync(id);
-            if (shipment == null)
+            try
             {
-                return Json(new { success = false, message = "Заказ не найден" });
-            }
+                var shipment = await _context.Shipments.FindAsync(id);
+                if (shipment == null)
+                {
+                    return Json(new { success = false, message = "Заказ не найден" });
+                }
 
-            // Проверка, что водитель может обновлять только свои доставки
-            var driverId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (shipment.DriverId != driverId)
+                var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+                // Проверяем, что водитель может менять статус только своих заказов
+                if (shipment.DriverId != currentUserId)
+                {
+                    return Json(new { success = false, message = "У вас нет прав для изменения этого заказа" });
+                }
+
+                // Проверяем валидность перехода статуса
+                if (!IsValidStatusTransition(shipment.Status, status))
+                {
+                    return Json(new { success = false, message = "Некорректный переход статуса" });
+                }
+
+                shipment.Status = status;
+                shipment.UpdatedAt = DateTime.Now;
+
+                // Если статус "Доставлен", устанавливаем дату завершения
+                if (status == ShipmentStatus.Delivered)
+                {
+                    shipment.CompletedAt = DateTime.Now;
+                }
+
+                await _context.SaveChangesAsync();
+
+                // Корректный JSON ответ с правильной кодировкой
+                return Json(new
+                {
+                    success = true,
+                    message = "Статус успешно обновлен",
+                    newStatus = status.ToString(),
+                    newStatusDisplay = GetStatusDisplayName(status)
+                });
+            }
+            catch (Exception ex)
             {
-                return Json(new { success = false, message = "Нет прав для изменения этого заказа" });
+                _logger.LogError(ex, "Ошибка при обновлении статуса заказа {Id}", id);
+                return Json(new { success = false, message = "Произошла ошибка при обновлении статуса" });
             }
+        }
 
-            shipment.Status = status;
-            shipment.UpdatedAt = DateTime.Now;
-
-            if (status == ShipmentStatus.Delivered)
+        // Вспомогательный метод для проверки валидности перехода статуса
+        private bool IsValidStatusTransition(ShipmentStatus currentStatus, ShipmentStatus newStatus)
+        {
+            // Водитель может менять статус только с Assigned на InTransit и с InTransit на Delivered
+            switch (currentStatus)
             {
-                shipment.CompletedAt = DateTime.Now;
+                case ShipmentStatus.Assigned:
+                return newStatus == ShipmentStatus.InTransit;
+                case ShipmentStatus.InTransit:
+                return newStatus == ShipmentStatus.Delivered;
+                default:
+                return false;
             }
+        }
 
-            await _context.SaveChangesAsync();
-
-            _logger.LogInformation($"Статус доставки {shipment.OrderNumber} изменен на {status}");
-
-            return Json(new { success = true, message = "Статус успешно обновлен" });
+        // Метод для получения отображаемого имени статуса
+        private string GetStatusDisplayName(ShipmentStatus status)
+        {
+            return status switch
+            {
+                ShipmentStatus.Pending => "Ожидает",
+                ShipmentStatus.Processing => "Обрабатывается",
+                ShipmentStatus.Assigned => "Назначен",
+                ShipmentStatus.InTransit => "В пути",
+                ShipmentStatus.Delivered => "Доставлен",
+                ShipmentStatus.Cancelled => "Отменен",
+                _ => status.ToString()
+            };
         }
 
         private bool ShipmentExists(int id)
@@ -452,6 +466,75 @@ namespace Carzvo.Controllers
             }
 
             return Math.Round(basePrice, 2);
+        }
+
+        // GET: /Shipments/AllOrders - для менеджеров и админов
+        [Authorize(Roles = "Manager,Admin")]
+        public async Task<IActionResult> AllOrders(string search = "", string status = "",
+            string sortBy = "CreatedAt", string sortOrder = "desc")
+        {
+            // Начинаем запрос
+            var query = _context.Shipments
+                .Include(s => s.User)
+                .Include(s => s.Driver)
+                .AsQueryable();
+
+            // Поиск
+            if (!string.IsNullOrEmpty(search))
+            {
+                search = search.ToLower();
+                query = query.Where(s =>
+                    s.OrderNumber.ToLower().Contains(search) ||
+                    s.Description.ToLower().Contains(search) ||
+                    s.PickupAddress.ToLower().Contains(search) ||
+                    s.DeliveryAddress.ToLower().Contains(search) ||
+                    s.User.FullName.ToLower().Contains(search) ||
+                    s.User.PhoneNumber.Contains(search) ||
+                    s.User.Email.ToLower().Contains(search) ||
+                    (s.Driver != null && s.Driver.FullName.ToLower().Contains(search))
+                );
+            }
+
+            // Фильтр по статусу
+            if (!string.IsNullOrEmpty(status) && Enum.TryParse<ShipmentStatus>(status, out var statusEnum))
+            {
+                query = query.Where(s => s.Status == statusEnum);
+            }
+
+            // Сортировка
+            switch (sortBy.ToLower())
+            {
+                case "pickupdate":
+                query = sortOrder.ToLower() == "asc"
+                    ? query.OrderBy(s => s.PickupDate)
+                    : query.OrderByDescending(s => s.PickupDate);
+                break;
+                case "price":
+                query = sortOrder.ToLower() == "asc"
+                    ? query.OrderBy(s => s.Price)
+                    : query.OrderByDescending(s => s.Price);
+                break;
+                case "ordernumber":
+                query = sortOrder.ToLower() == "asc"
+                    ? query.OrderBy(s => s.OrderNumber)
+                    : query.OrderByDescending(s => s.OrderNumber);
+                break;
+                default: // CreatedAt
+                query = sortOrder.ToLower() == "asc"
+                    ? query.OrderBy(s => s.CreatedAt)
+                    : query.OrderByDescending(s => s.CreatedAt);
+                break;
+            }
+
+            var shipments = await query.ToListAsync();
+
+            // Передаем параметры в ViewBag для сохранения в форме
+            ViewBag.Search = search;
+            ViewBag.Status = status;
+            ViewBag.SortBy = sortBy;
+            ViewBag.SortOrder = sortOrder;
+
+            return View(shipments);
         }
     }
 }

@@ -208,7 +208,7 @@
                         }
 
                         <!-- Кнопки управления статусом для водителей -->
-                        @if (isDriver && Model.DriverId == currentUserId)
+                        @* @if (isDriver && Model.DriverId == currentUserId)
                         {
                             if (Model.Status == ShipmentStatus.Assigned)
                             {
@@ -219,6 +219,8 @@
                                     <button type="submit" class="btn btn-primary w-100 d-flex align-items-center justify-content-center">
                                         <i class="fas fa-play me-2"></i>Начать выполнение
                                     </button>
+
+
                                 </form>
                             }
 
@@ -233,7 +235,7 @@
                                     </button>
                                 </form>
                             }
-                        }
+                        } *@
 
                         <a asp-controller="Home" asp-action="Dashboard" class="btn btn-outline-secondary d-flex align-items-center justify-content-center">
                             <i class="fas fa-boxes me-2"></i>К списку заказов
@@ -298,4 +300,5 @@
             return status.ToString();
         }
     }
+
 }

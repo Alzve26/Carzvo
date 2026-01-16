@@ -55,25 +55,88 @@ namespace Carzvo.Controllers
             return View(model);
         }
 
-        // GET: /Admin/Users - список всех пользователей
-        public async Task<IActionResult> Users()
+        // GET: /Admin/Users - список всех пользователей (доступен для Admin и Manager)
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> Users(string search = "", string role = "", string driver = "",
+                                              string sortBy = "RegistrationDate", string sortOrder = "desc")
         {
-            var users = await _context.Users
-                .OrderBy(u => u.UserName)
-                .ToListAsync();
-
-            var userRoles = new Dictionary<string, List<string>>();
-
-            foreach (var user in users)
+            try
             {
-                var roles = await _userManager.GetRolesAsync(user);
-                userRoles[user.Id] = roles.ToList();
+                // Базовый запрос
+                var query = _context.Users.AsQueryable();
+
+                // Поиск
+                if (!string.IsNullOrEmpty(search))
+                {
+                    search = search.ToLower();
+                    query = query.Where(u =>
+                        (u.FullName != null && u.FullName.ToLower().Contains(search)) ||
+                        u.Email.ToLower().Contains(search) ||
+                        (u.PhoneNumber != null && u.PhoneNumber.Contains(search)) ||
+                        u.UserName.ToLower().Contains(search));
+                }
+
+                // Фильтр по роли
+                if (!string.IsNullOrEmpty(role))
+                {
+                    var userIdsInRole = await _userManager.GetUsersInRoleAsync(role);
+                    var userIds = userIdsInRole.Select(u => u.Id);
+                    query = query.Where(u => userIds.Contains(u.Id));
+                }
+
+                // Фильтр по статусу водителя
+                if (!string.IsNullOrEmpty(driver))
+                {
+                    bool isDriver = driver == "true";
+                    query = query.Where(u => u.IsDriver == isDriver);
+                }
+
+                // Сортировка
+                query = sortBy switch
+                {
+                    "FullName" => sortOrder == "asc"
+                        ? query.OrderBy(u => u.FullName ?? "")
+                        : query.OrderByDescending(u => u.FullName ?? ""),
+                    "Email" => sortOrder == "asc"
+                        ? query.OrderBy(u => u.Email)
+                        : query.OrderByDescending(u => u.Email),
+                    "IsDriver" => sortOrder == "asc"
+                        ? query.OrderBy(u => u.IsDriver)
+                        : query.OrderByDescending(u => u.IsDriver),
+                    "RegistrationDate" => sortOrder == "asc"
+                        ? query.OrderBy(u => u.RegistrationDate)
+                        : query.OrderByDescending(u => u.RegistrationDate),
+                    _ => query.OrderByDescending(u => u.RegistrationDate)
+                };
+
+                // Получаем пользователей
+                var users = await query.ToListAsync();
+
+                // Получаем роли для каждого пользователя
+                var userRoles = new Dictionary<string, List<string>>();
+                foreach (var user in users)
+                {
+                    var roles = await _userManager.GetRolesAsync(user);
+                    userRoles[user.Id] = roles.ToList();
+                }
+
+                // Передаем параметры в ViewBag для отображения в форме
+                ViewBag.UserRoles = userRoles;
+                ViewBag.SearchQuery = search;
+                ViewBag.RoleFilter = role;
+                ViewBag.DriverFilter = driver;
+                ViewBag.SortBy = sortBy;
+                ViewBag.SortOrder = sortOrder;
+
+                ViewData["Title"] = "Управление пользователями";
+                return View(users);
             }
-
-            ViewBag.UserRoles = userRoles;
-            ViewData["Title"] = "Управление пользователями";
-
-            return View(users);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Ошибка при загрузке списка пользователей");
+                TempData["ErrorMessage"] = "Произошла ошибка при загрузке списка пользователей";
+                return View(new List<ApplicationUser>());
+            }
         }
 
         // GET: /Admin/EditUserRoles/{id} - редактирование ролей пользователя

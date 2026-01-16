@@ -49,6 +49,33 @@
                 color: #4361ee !important;
             }
 
+        /* Стили для кнопок в навигации */
+        .nav-btn {
+            padding: 8px 16px !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            margin: 0 5px;
+            display: flex;
+            align-items: center;
+            transition: all 0.3s ease;
+            border: none !important;
+            background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%) !important;
+            color: white !important;
+        }
+
+            .nav-btn:hover {
+                background: linear-gradient(135deg, #3a0ca3 0%, #2d0b7a 100%) !important;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+                color: white !important;
+            }
+
+            /* Для активной кнопки - более темный оттенок */
+            .nav-btn.active {
+                background: linear-gradient(135deg, #2d0b7a 0%, #1e0850 100%) !important;
+                box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            }
+
         .footer {
             margin-top: auto;
             padding: 1.5rem 0;
@@ -100,13 +127,20 @@
                 transform: translateY(0);
             }
 
-        /* Адаптивность через JS */
-        .desktop-only {
-            display: block;
+        /* Адаптивность */
+        @@media (max-width: 768px) {
+            .nav-btn
+
+        {
+            margin: 5px 0;
+            width: 100%;
+            justify-content: center;
         }
 
-        .mobile-only {
-            display: none;
+        .nav-item {
+            width: 100%;
+        }
+
         }
     </style>
 </head>
@@ -130,27 +164,49 @@
                     <div class="collapse navbar-collapse" id="navbarMain">
                         <ul class="navbar-nav mx-auto mb-2 mb-lg-0">
                             <li class="nav-item">
-                                <a class="nav-link d-flex align-items-center" asp-controller="Home" asp-action="Index">
+                                <a class="nav-link nav-btn d-flex align-items-center" asp-controller="Home" asp-action="Index">
                                     <i class="fas fa-home me-2"></i>
                                     Главная
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link d-flex align-items-center" asp-controller="Home" asp-action="Dashboard">
-                                    <i class="fas fa-boxes me-2"></i>  <!-- Изменена иконка -->
-                                    Заказы  <!-- Изменено с "Панель управления" -->
+                                <a class="nav-link nav-btn d-flex align-items-center" asp-controller="Home" asp-action="Dashboard">
+                                    <i class="fas fa-boxes me-2"></i>
+                                    Заказы
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link d-flex align-items-center" asp-controller="Shipments" asp-action="Create">
-                                    <i class="fas fa-plus-circle me-2"></i>
-                                    Новая доставка
-                                </a>
-                            </li>
+
+                            @{
+                                // Проверяем роли пользователя
+                                var isAdminOrManager = User.IsInRole("Admin") || User.IsInRole("Manager");
+                                var isRegularUser = User.IsInRole("User") && !User.IsInRole("Admin") && !User.IsInRole("Manager") && !User.IsInRole("Driver");
+                            }
+
+                            <!-- Все заказы для админов/менеджеров -->
+                            @if (isAdminOrManager)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link nav-btn d-flex align-items-center" asp-controller="Shipments" asp-action="AllOrders">
+                                        <i class="fas fa-list-alt me-2"></i>
+                                        <span>Все заказы</span>
+                                    </a>
+                                </li>
+                            }
+
+                            <!-- Новый заказ для обычных пользователей -->
+                            @if (isRegularUser)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link nav-btn d-flex align-items-center" asp-controller="Shipments" asp-action="Create">
+                                        <i class="fas fa-plus-circle me-2"></i>
+                                        <span>Новый заказ</span>
+                                    </a>
+                                </li>
+                            }
                         </ul>
 
                         <!-- Правая часть навигации -->
-                        <div class="d-flex align-items-center">
+                        <div class="d-flex flex-column flex-md-row align-items-center gap-2">
                             <partial name="_LoginPartial" />
                         </div>
                     </div>
@@ -178,7 +234,6 @@
                                     var controllerDisplayName = controllerName switch
                                     {
                                         "Home" => "Главная",
-                                        "Shipments" => "Заказы",
                                         "Account" => "Аккаунт",
                                         "Dashboard" => "Заказы",
                                         "Admin" => "Админ",
@@ -201,9 +256,9 @@
                                         "Details" => "Детали",
                                         "Privacy" => "Политика",
                                         "Dashboard" => "Заказы",
+                                        "AllOrders" => "Все заказы",
                                         "Login" => "Вход",
                                         "Register" => "Регистрация",
-                                        "Profile" => "Профиль",
                                         "ChangePassword" => "Смена пароля",
                                         _ => actionName
                                     };
@@ -268,14 +323,12 @@
             // Анимация появления
             $('.fade-in').addClass('show');
 
-            // Адаптивность
+            // Адаптивность для кнопок
             function checkResponsive() {
                 if (window.innerWidth <= 768) {
-                    $('.desktop-only').hide();
-                    $('.mobile-only').show();
+                    $('.nav-btn').addClass('w-100').addClass('justify-content-center');
                 } else {
-                    $('.desktop-only').show();
-                    $('.mobile-only').hide();
+                    $('.nav-btn').removeClass('w-100').removeClass('justify-content-center');
                 }
             }
 

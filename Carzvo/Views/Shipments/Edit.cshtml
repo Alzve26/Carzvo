@@ -78,39 +78,19 @@
                     }
 
                     <form asp-action="Edit" method="post" id="editForm">
-                        <!-- Только ID для всех -->
                         <input type="hidden" asp-for="Id" />
 
-                        <!-- Только для обычных пользователей -->
                         @if (!isManagerOrAdmin)
                         {
-                            <input type="hidden" asp-for="Status" />
-                            <input type="hidden" asp-for="DriverId" />
-                            <input type="hidden" asp-for="Price" />
+                            <!-- Добавьте эти скрытые поля для обычных пользователей -->
+                            <input type="hidden" name="Status" value="@Model.Status" />
+                            <input type="hidden" name="DriverId" value="@Model.DriverId" />
+                            <input type="hidden" name="Price" value="@Model.Price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" />
                         }
-
-                        <!-- Для менеджеров (скрытые поля для передачи данных на сервер) -->
-                        @if (isManagerOrAdmin)
-                        {
-                            <input type="hidden" asp-for="Description" />
-                            <input type="hidden" asp-for="PickupDate" />
-                            <input type="hidden" asp-for="DeliveryDate" />
-                            <input type="hidden" asp-for="PickupAddress" />
-                            <input type="hidden" asp-for="DeliveryAddress" />
-                            <input type="hidden" asp-for="Weight" />
-                            <input type="hidden" asp-for="Volume" />
-                            <input type="hidden" asp-for="CargoType" />
-                            <input type="hidden" asp-for="VehicleType" />
-                            <input type="hidden" asp-for="Notes" />
-                            <input type="hidden" asp-for="UserId" />
-                            <input type="hidden" asp-for="CreatedAt" />
-                            <input type="hidden" asp-for="OrderNumber" />
-                        }
-
                         @Html.AntiForgeryToken()
 
                         <div class="row">
-                            <!-- Для обычных пользователей -->
+                            <!-- Для ОБЫЧНЫХ пользователей -->
                             @if (!isManagerOrAdmin)
                             {
                                 <div class="col-md-12 mb-4">
@@ -146,7 +126,7 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label asp-for="Description" class="form-label required">Описание груза</label>
-                                        <textarea asp-for="Description" class="form-control" rows="3" required></textarea>
+                                        <textarea asp-for="Description" class="form-control" rows="3" required>@Model.Description</textarea>
                                         <span asp-validation-for="Description" class="text-danger"></span>
                                     </div>
                                 </div>
@@ -155,34 +135,38 @@
                                     <div class="row">
                                         <div class="col-md-6 mb-3">
                                             <label asp-for="PickupDate" class="form-label required">Дата загрузки</label>
-                                            <input asp-for="PickupDate" class="form-control" type="datetime-local" required>
+                                            <input asp-for="PickupDate" class="form-control" type="datetime-local" required
+                                                   value="@Model.PickupDate.ToString("yyyy-MM-ddTHH:mm")">
                                             <span asp-validation-for="PickupDate" class="text-danger"></span>
                                         </div>
 
                                         <div class="col-md-6 mb-3">
                                             <label asp-for="DeliveryDate" class="form-label required">Дата доставки</label>
-                                            <input asp-for="DeliveryDate" class="form-control" type="datetime-local" required>
+                                            <input asp-for="DeliveryDate" class="form-control" type="datetime-local" required
+                                                   value="@Model.DeliveryDate.ToString("yyyy-MM-ddTHH:mm")">
                                             <span asp-validation-for="DeliveryDate" class="text-danger"></span>
                                         </div>
                                     </div>
 
                                     <div class="mb-3">
                                         <label asp-for="Notes" class="form-label">Примечания</label>
-                                        <textarea asp-for="Notes" class="form-control" rows="2"></textarea>
+                                        <textarea asp-for="Notes" class="form-control" rows="2">@Model.Notes</textarea>
                                         <span asp-validation-for="Notes" class="text-danger"></span>
                                     </div>
                                 </div>
                             }
                             else
                             {
-                                <!-- Для менеджеров и админов -->
+                                <!-- Для МЕНЕДЖЕРОВ и АДМИНОВ -->
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label asp-for="Status" class="form-label required">Статус</label>
                                         <select asp-for="Status" class="form-select" required>
                                             @foreach (var status in Enum.GetValues(typeof(ShipmentStatus)).Cast<ShipmentStatus>())
                                             {
-                                                <option value="@status">@GetStatusDisplayName(status)</option>
+                                                <option value="@status" selected="@(Model.Status == status)">
+                                                    @GetStatusDisplayName(status)
+                                                </option>
                                             }
                                         </select>
                                         <span asp-validation-for="Status" class="text-danger"></span>
@@ -194,7 +178,9 @@
                                             <option value="">Выберите водителя</option>
                                             @foreach (var driver in drivers)
                                             {
-                                                <option value="@driver.Id">@driver.FullName (@driver.PhoneNumber)</option>
+                                                <option value="@driver.Id" selected="@(Model.DriverId == driver.Id)">
+                                                    @driver.FullName (@driver.PhoneNumber)
+                                                </option>
                                             }
                                         </select>
                                         <span asp-validation-for="DriverId" class="text-danger"></span>
@@ -204,13 +190,16 @@
                                         <label asp-for="Price" class="form-label">Цена (₽)</label>
                                         <div class="input-group">
                                             <span class="input-group-text">₽</span>
-                                            <input asp-for="Price" class="form-control" type="number" step="0.01" min="0">
+                                            <input type="text" name="Price" class="form-control"
+                                                   value="@Model.Price.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
+                                                   placeholder="0.00">
                                         </div>
+                                        <small class="text-muted">Используйте точку как разделитель: 1500.50</small>
                                         <span asp-validation-for="Price" class="text-danger"></span>
                                     </div>
                                 </div>
 
-                                <div class="col-md-4">
+                                <div class="col-md-8">
                                     <!-- Карточка с информацией о клиенте -->
                                     <div class="card info-card h-100">
                                         <div class="card-body">
@@ -242,77 +231,80 @@
                                     </div>
                                 </div>
 
-                                <div class="col-md-4">
-                                    <div class="card info-card h-100">
+                                <!-- Информация о заказе (только чтение) -->
+                                <div class="col-md-12 mt-4">
+                                    <div class="card info-card">
                                         <div class="card-body">
                                             <h6 class="card-title mb-3">
                                                 <i class="fas fa-info-circle me-2"></i>Информация о заказе
                                             </h6>
 
                                             <div class="row">
-                                                <div class="col-12 mb-2">
+                                                <div class="col-md-3 mb-2">
                                                     <div class="text-muted small">№ Заказа</div>
                                                     <div class="fw-medium">@Model.OrderNumber</div>
                                                 </div>
-                                            </div>
-
-                                            <div class="row">
-                                                <div class="col-12 mb-2">
-                                                    <div class="text-muted small">Адрес загрузки</div>
-                                                    <div class="fw-medium">@Model.PickupAddress</div>
+                                                <div class="col-md-3 mb-2">
+                                                    <div class="text-muted small">Текущий статус</div>
+                                                    <div class="fw-medium badge @GetStatusBadgeClass(Model.Status)">
+                                                        @GetStatusDisplayName(Model.Status)
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-3 mb-2">
+                                                    <div class="text-muted small">Текущая цена</div>
+                                                    <div class="fw-medium">@Model.Price.ToString("N2") ₽</div>
+                                                </div>
+                                                <div class="col-md-3 mb-2">
+                                                    <div class="text-muted small">Текущий водитель</div>
+                                                    <div class="fw-medium">@(Model.Driver?.FullName ?? "Не назначен")</div>
                                                 </div>
                                             </div>
 
+                                            <hr class="my-3">
+
                                             <div class="row">
-                                                <div class="col-12 mb-2">
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="text-muted small">Адрес загрузки</div>
+                                                    <div class="fw-medium">@Model.PickupAddress</div>
+                                                </div>
+                                                <div class="col-md-6 mb-2">
                                                     <div class="text-muted small">Адрес доставки</div>
                                                     <div class="fw-medium">@Model.DeliveryAddress</div>
                                                 </div>
                                             </div>
 
                                             <div class="row">
-                                                <div class="col-6 mb-2">
+                                                <div class="col-md-3 mb-2">
                                                     <div class="text-muted small">Вес</div>
                                                     <div class="fw-medium">@FormatNumber(Model.Weight) кг</div>
                                                 </div>
-                                                <div class="col-6 mb-2">
+                                                <div class="col-md-3 mb-2">
                                                     <div class="text-muted small">Объем</div>
                                                     <div class="fw-medium">@(Model.Volume > 0 ? FormatNumber(Model.Volume) + " м³" : "Не указан")</div>
                                                 </div>
-                                            </div>
-
-                                            @if (Model.CargoType != null && Model.CargoType.ToString() != "None" && Model.CargoType.ToString() != "0")
-                                            {
-                                                <div class="row">
-                                                    <div class="col-12 mb-2">
-                                                        <div class="text-muted small">Тип груза</div>
-                                                        <div class="fw-medium">@GetCargoTypeDisplayName(Model.CargoType)</div>
-                                                    </div>
+                                                <div class="col-md-3 mb-2">
+                                                    <div class="text-muted small">Тип груза</div>
+                                                    <div class="fw-medium">@GetCargoTypeDisplayName(Model.CargoType)</div>
                                                 </div>
-                                            }
-
-                                            <div class="row">
-                                                <div class="col-12 mb-2">
+                                                <div class="col-md-3 mb-2">
                                                     <div class="text-muted small">Тип транспорта</div>
                                                     <div class="fw-medium">@GetVehicleTypeDisplayName(Model.VehicleType)</div>
                                                 </div>
                                             </div>
 
-                                            <!-- Описание груза -->
                                             <div class="row">
-                                                <div class="col-12 mb-2">
+                                                <div class="col-md-12 mb-2">
                                                     <div class="text-muted small">Описание груза</div>
                                                     <div class="fw-medium">@Model.Description</div>
                                                 </div>
                                             </div>
 
-                                            <!-- Даты -->
                                             <div class="row">
-                                                <div class="col-6 mb-2">
+                                                <div class="col-md-6 mb-2">
                                                     <div class="text-muted small">Дата загрузки</div>
                                                     <div class="fw-medium">@Model.PickupDate.ToString("dd.MM.yyyy HH:mm")</div>
                                                 </div>
-                                                <div class="col-6 mb-2">
+                                                <div class="col-md-6 mb-2">
                                                     <div class="text-muted small">Дата доставки</div>
                                                     <div class="fw-medium">@Model.DeliveryDate.ToString("dd.MM.yyyy HH:mm")</div>
                                                 </div>
@@ -321,7 +313,7 @@
                                             @if (!string.IsNullOrEmpty(Model.Notes))
                                             {
                                                 <div class="row">
-                                                    <div class="col-12 mb-2">
+                                                    <div class="col-md-12 mb-2">
                                                         <div class="text-muted small">Примечания</div>
                                                         <div class="fw-medium">@Model.Notes</div>
                                                     </div>
@@ -329,21 +321,15 @@
                                             }
 
                                             <div class="row">
-                                                <div class="col-12 mb-2">
+                                                <div class="col-md-6 mb-2">
                                                     <div class="text-muted small">Дата создания</div>
                                                     <div class="fw-medium">@Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</div>
                                                 </div>
-                                            </div>
-
-                                            @if (Model.UpdatedAt.HasValue)
-                                            {
-                                                <div class="row">
-                                                    <div class="col-12">
-                                                        <div class="text-muted small">Последнее обновление</div>
-                                                        <div class="fw-medium">@Model.UpdatedAt.Value.ToString("dd.MM.yyyy HH:mm")</div>
-                                                    </div>
+                                                <div class="col-md-6 mb-2">
+                                                    <div class="text-muted small">Последнее обновление</div>
+                                                    <div class="fw-medium">@(Model.UpdatedAt?.ToString("dd.MM.yyyy HH:mm") ?? "Не обновлялся")</div>
                                                 </div>
-                                            }
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -386,59 +372,21 @@
                 $('.alert').fadeOut('slow');
             }, 5000);
 
-            // Форматирование datetime-local полей
-            function formatDateTimeLocal(date) {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const day = String(date.getDate()).padStart(2, '0');
-                const hours = String(date.getHours()).padStart(2, '0');
-                const minutes = String(date.getMinutes()).padStart(2, '0');
-
-                return `${year}-${month}-${day}T${hours}:${minutes}`;
-            }
-
-            // Установка текущего времени по умолчанию, если поля пустые
-            @if (!isManagerOrAdmin)
-            {
-                <text>
-                const pickupDateInput = document.getElementById('PickupDate');
-                const deliveryDateInput = document.getElementById('DeliveryDate');
-
-                if (pickupDateInput && !pickupDateInput.value) {
-                    const now = new Date();
-                    const oneHourLater = new Date(now.getTime() + 60 * 60 * 1000); // +1 час
-                    pickupDateInput.value = formatDateTimeLocal(oneHourLater);
-                }
-
-                if (deliveryDateInput && !deliveryDateInput.value) {
-                    const pickupDate = pickupDateInput ? new Date(pickupDateInput.value) : new Date();
-                    const twoHoursLater = new Date(pickupDate.getTime() + 2 * 60 * 60 * 1000); // +2 часа
-                    deliveryDateInput.value = formatDateTimeLocal(twoHoursLater);
-                }
-                </text>
-            }
-
             // Обработка отправки формы
             $('#editForm').submit(function(e) {
                 console.log('Отправка формы редактирования...');
 
-                // Проверка валидации
-                if (!$(this).valid()) {
-                    console.log('Форма не прошла валидацию');
-                    return true;
-                }
-
                 // Проверка дат (только для обычных пользователей)
                 @if (!isManagerOrAdmin)
                 {
-                    @:const pickupDate = new Date($('#PickupDate').val());
-                    @:const deliveryDate = new Date($('#DeliveryDate').val());
-                    @:
-                    @:if (deliveryDate <= pickupDate) {
-                    @:    alert('Ошибка: Дата доставки должна быть позже даты загрузки!');
-                    @:    e.preventDefault();
-                    @:    return false;
-                    @:}
+                        @:const pickupDate = new Date($('#PickupDate').val());
+                        @:const deliveryDate = new Date($('#DeliveryDate').val());
+                        @:
+                        @:if (deliveryDate <= pickupDate) {
+                        @:    alert('Ошибка: Дата доставки должна быть позже даты загрузки!');
+                        @:    e.preventDefault();
+                        @:    return false;
+                        @:}
                 }
 
                 // Показываем индикатор загрузки
@@ -473,6 +421,20 @@
         }
 
         return str;
+    }
+
+    string GetStatusBadgeClass(ShipmentStatus status)
+    {
+        return status switch
+        {
+            ShipmentStatus.Pending => "bg-warning text-dark",
+            ShipmentStatus.Processing => "bg-info text-white",
+            ShipmentStatus.Assigned => "bg-primary text-white",
+            ShipmentStatus.InTransit => "bg-info text-white",
+            ShipmentStatus.Delivered => "bg-success text-white",
+            ShipmentStatus.Cancelled => "bg-danger text-white",
+            _ => "bg-secondary text-white"
+        };
     }
 
     string GetStatusDisplayName(ShipmentStatus status)

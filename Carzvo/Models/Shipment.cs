@@ -131,6 +131,7 @@ namespace Carzvo.Models
         public ShipmentStatus Status { get; set; } = ShipmentStatus.Pending;
 
         [Display(Name = "Цена")]
+        [DataType(DataType.Currency)]
         [Column(TypeName = "decimal(18,2)")]
         [Range(0, 10000000, ErrorMessage = "Цена должна быть от 0 до 10,000,000")]
         public decimal Price { get; set; }

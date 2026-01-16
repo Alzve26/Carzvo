@@ -1,0 +1,292 @@
+﻿@model IEnumerable<Carzvo.Models.Shipment>
+@using Carzvo.Models
+
+@{
+    ViewData["Title"] = "Все заказы";
+}
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-boxes me-2"></i>@ViewData["Title"]</h2>
+        <a asp-controller="Home" asp-action="Dashboard" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Назад в Заказы
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Панель поиска и фильтров -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Поиск</label>
+                    <input type="text" class="form-control" name="search" value="@ViewBag.Search"
+                           placeholder="Номер, клиент, адрес...">
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Статус</label>
+                    <select class="form-select" name="status">
+                        <option value="">Все статусы</option>
+                        @foreach (var status in Enum.GetValues(typeof(ShipmentStatus)).Cast<ShipmentStatus>())
+                        {
+                            <option value="@status" selected="@(ViewBag.Status?.ToString() == status.ToString())">
+                                @GetStatusDisplayName(status)
+                            </option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Сортировка</label>
+                    <select class="form-select" name="sortBy">
+                        <option value="CreatedAt" selected="@(ViewBag.SortBy == "CreatedAt")">Дата создания</option>
+                        <option value="PickupDate" selected="@(ViewBag.SortBy == "PickupDate")">Дата загрузки</option>
+                        <option value="Price" selected="@(ViewBag.SortBy == "Price")">Цена</option>
+                        <option value="OrderNumber" selected="@(ViewBag.SortBy == "OrderNumber")">Номер заказа</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Порядок</label>
+                    <select class="form-select" name="sortOrder">
+                        <option value="desc" selected="@(ViewBag.SortOrder == "desc")">По убыванию</option>
+                        <option value="asc" selected="@(ViewBag.SortOrder == "asc")">По возрастанию</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>Применить фильтры
+                    </button>
+                    <a asp-action="AllOrders" class="btn btn-outline-secondary">
+                        <i class="fas fa-times me-2"></i>Сбросить
+                    </a>
+
+                    <!-- Статистика -->
+                    <div class="mt-2 text-muted">
+                        Найдено заказов: @Model.Count()
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Заказы не найдены</h5>
+                <p class="text-muted">Попробуйте изменить параметры поиска</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>
+                                    <a href="?sortBy=OrderNumber&sortOrder=@(ViewBag.SortBy == "OrderNumber" && ViewBag.SortOrder == "asc" ? "desc" : "asc")&search=@ViewBag.Search&status=@ViewBag.Status"
+                                       class="text-decoration-none text-dark">
+                                        № Заказа
+                                        @if (ViewBag.SortBy == "OrderNumber")
+                                        {
+                                            <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-sort text-muted"></i>
+                                        }
+                                    </a>
+                                </th>
+                                <th>Клиент</th>
+                                <th>
+                                    <a href="?sortBy=PickupDate&sortOrder=@(ViewBag.SortBy == "PickupDate" && ViewBag.SortOrder == "asc" ? "desc" : "asc")&search=@ViewBag.Search&status=@ViewBag.Status"
+                                       class="text-decoration-none text-dark">
+                                        Дата загрузки
+                                        @if (ViewBag.SortBy == "PickupDate")
+                                        {
+                                            <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-sort text-muted"></i>
+                                        }
+                                    </a>
+                                </th>
+                                <th>Статус</th>
+                                <th>Водитель</th>
+                                <th>
+                                    <a href="?sortBy=Price&sortOrder=@(ViewBag.SortBy == "Price" && ViewBag.SortOrder == "asc" ? "desc" : "asc")&search=@ViewBag.Search&status=@ViewBag.Status"
+                                       class="text-decoration-none text-dark">
+                                        Цена
+                                        @if (ViewBag.SortBy == "Price")
+                                        {
+                                            <i class="fas fa-sort-@(ViewBag.SortOrder == "asc" ? "up" : "down")"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-sort text-muted"></i>
+                                        }
+                                    </a>
+                                </th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var shipment in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong class="text-primary">@shipment.OrderNumber</strong>
+                                        <div class="small text-muted">
+                                            @shipment.PickupAddress.Split(',')[0] →
+                                            @shipment.DeliveryAddress.Split(',')[0]
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-medium">@shipment.User?.FullName</div>
+                                        <div class="small text-muted">@shipment.User?.PhoneNumber</div>
+                                        <div class="small text-muted">@shipment.User?.Email</div>
+                                    </td>
+                                    <td>
+                                        <div>@shipment.PickupDate.ToString("dd.MM.yyyy")</div>
+                                        <div class="small text-muted">@shipment.PickupDate.ToString("HH:mm")</div>
+                                    </td>
+                                    <td>
+                                        @{
+                                            var statusClass = shipment.Status switch
+                                            {
+                                                ShipmentStatus.Pending => "bg-warning text-dark",
+                                                ShipmentStatus.Processing => "bg-info text-white",
+                                                ShipmentStatus.Assigned => "bg-primary text-white",
+                                                ShipmentStatus.InTransit => "bg-info text-white",
+                                                ShipmentStatus.Delivered => "bg-success text-white",
+                                                ShipmentStatus.Cancelled => "bg-danger text-white",
+                                                _ => "bg-secondary text-white"
+                                            };
+                                        }
+                                        <span class="badge @statusClass">@GetStatusDisplayName(shipment.Status)</span>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(shipment.DriverId))
+                                        {
+                                            <div>@shipment.Driver?.FullName</div>
+                                            <div class="small text-muted">@shipment.Driver?.PhoneNumber</div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Не назначен</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold">@shipment.Price.ToString("N2") ₽</span>
+                                        @if (shipment.Price == 0)
+                                        {
+                                            <div class="small text-warning">Не рассчитана</div>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-action="Details" asp-route-id="@shipment.Id"
+                                               class="btn btn-outline-info" title="Просмотр">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@shipment.Id"
+                                               class="btn btn-outline-primary" title="Редактировать">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            @if (shipment.Status == ShipmentStatus.Pending)
+                                            {
+                                                <a asp-action="Delete" asp-route-id="@shipment.Id"
+                                                   class="btn btn-outline-danger" title="Удалить"
+                                                   onclick="return confirm('Удалить заказ @shipment.OrderNumber?');">
+                                                    <i class="fas fa-trash"></i>
+                                                </a>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Экспорт данных -->
+        <div class="mt-3">
+            <div class="btn-group">
+                <button type="button" class="btn btn-outline-success btn-sm" onclick="exportToExcel()">
+                    <i class="fas fa-file-excel me-2"></i>Экспорт в Excel
+                </button>
+                <button type="button" class="btn btn-outline-primary btn-sm" onclick="printTable()">
+                    <i class="fas fa-print me-2"></i>Печать
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            // Автоматическое скрытие уведомлений
+            setTimeout(function() {
+                $('.alert').fadeOut('slow');
+            }, 5000);
+
+            // Инициализация подсказок
+            $('[title]').tooltip();
+        });
+
+        function exportToExcel() {
+            alert('Функция экспорта в Excel будет реализована позже');
+            // Здесь можно добавить экспорт данных
+        }
+
+        function printTable() {
+            window.print();
+        }
+
+        // Быстрый поиск при вводе
+        let searchTimeout;
+        $('input[name="search"]').on('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                if ($(this).val().length >= 3 || $(this).val().length === 0) {
+                    $(this).closest('form').submit();
+                }
+            }, 500);
+        });
+    </script>
+}
+
+@functions {
+    string GetStatusDisplayName(ShipmentStatus status)
+    {
+        return status switch
+        {
+            ShipmentStatus.Pending => "Ожидает",
+            ShipmentStatus.Processing => "Обрабатывается",
+            ShipmentStatus.Assigned => "Назначен водитель",
+            ShipmentStatus.InTransit => "В пути",
+            ShipmentStatus.Delivered => "Доставлен",
+            ShipmentStatus.Cancelled => "Отменен",
+            _ => status.ToString()
+        };
+    }
+}

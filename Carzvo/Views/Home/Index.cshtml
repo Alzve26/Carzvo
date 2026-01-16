@@ -1,5 +1,11 @@
 ﻿@{
     ViewData["Title"] = "Carzvo - Грузоперевозки";
+
+    // Проверяем, что пользователь ТОЛЬКО в роли User и больше ни в каких других ролях
+    var userIsOnlyUser = User.IsInRole("User") &&
+                         !User.IsInRole("Admin") &&
+                         !User.IsInRole("Manager") &&
+                         !User.IsInRole("Driver");
 }
 
 <div class="container mt-5">
@@ -24,7 +30,9 @@
                 <a asp-controller="Home" asp-action="Dashboard" class="btn btn-primary btn-lg me-3 px-4 py-2">
                     <i class="fas fa-tachometer-alt me-2"></i>Заказы
                 </a>
-                @if (User.IsInRole("User"))
+
+                <!-- Кнопка "Новая доставка" показывается ТОЛЬКО для роли User и ни для кого больше -->
+                @if (userIsOnlyUser)
                 {
                     <a asp-controller="Shipments" asp-action="Create" class="btn btn-success btn-lg px-4 py-2">
                         <i class="fas fa-plus me-2"></i>Новая доставка

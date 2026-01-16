@@ -71,6 +71,8 @@
             </div>
         </div>
 
+        <!-- Блок быстрого доступа для админов/менеджеров УДАЛЕН -->
+
         <!-- Последние доставки -->
         @if (Model.RecentShipments != null && Model.RecentShipments.Any())
         {
@@ -263,6 +265,7 @@
                     <div class="card-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Мои заказы</h5>
+                            <!-- Кнопка "Новый заказ" ВОЗВРАЩЕНА -->
                             <a asp-controller="Shipments" asp-action="Create" class="btn btn-primary d-flex align-items-center">
                                 <i class="fas fa-plus me-1"></i>Новый заказ
                             </a>
@@ -421,9 +424,6 @@
                         }
                     </div>
                 </div>
-
-                <!-- УДАЛЕН: Блок "Быстрые действия" -->
-
             </div>
         </div>
     }
