@@ -31,10 +31,20 @@ namespace Carzvo.Areas.Identity.Pages.Account
 
         public class InputModel
         {
+            [Required(ErrorMessage = "Полное имя обязательно")]
+            [Display(Name = "Полное имя")]
+            [StringLength(100, ErrorMessage = "Имя должно содержать от {2} до {1} символов.", MinimumLength = 2)]
+            public string FullName { get; set; }
+
             [Required(ErrorMessage = "Email обязателен")]
             [EmailAddress(ErrorMessage = "Неверный формат Email")]
             [Display(Name = "Email")]
             public string Email { get; set; }
+
+            [Required(ErrorMessage = "Номер телефона обязателен")]
+            [Phone(ErrorMessage = "Неверный формат номера телефона")]
+            [Display(Name = "Номер телефона")]
+            public string PhoneNumber { get; set; }
 
             [Required(ErrorMessage = "Пароль обязателен")]
             [StringLength(100, ErrorMessage = "Пароль должен содержать от {2} до {1} символов.", MinimumLength = 6)]
@@ -63,16 +73,21 @@ namespace Carzvo.Areas.Identity.Pages.Account
                 {
                     UserName = Input.Email,
                     Email = Input.Email,
-                    FullName = Input.Email.Split('@')[0],
-                    CompanyName = "Не указано",
-                    Status = "Активен"
+                    FullName = Input.FullName,
+                    PhoneNumber = Input.PhoneNumber,
+                    CompanyName = "Частное лицо",
+                    Status = "Активен",
+                    
                 };
 
                 var result = await _userManager.CreateAsync(user, Input.Password);
 
                 if (result.Succeeded)
                 {
-                    _logger.LogInformation("Пользователь создал новую учетную запись с паролем.");
+                    _logger.LogInformation("Пользователь создал новую учетную запись.");
+
+                    // Добавляем стандартную роль
+                    await _userManager.AddToRoleAsync(user, "User");
 
                     await _signInManager.SignInAsync(user, isPersistent: false);
                     return LocalRedirect(returnUrl);
